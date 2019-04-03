@@ -77,7 +77,6 @@ export default DS.RESTAdapter.extend({
     delete data.secret;
 
     data.redirect_uri = fixUpRedirectUri(data.redirect_uri); //eslint-disable-line camelcase
-
     // post process the result of 'find'. Need to add the Model type 'client' into the response
     return this.ajax(this.buildURL(type.modelName, null, record), 'POST', { data: data })
       .then(
@@ -134,8 +133,7 @@ export default DS.RESTAdapter.extend({
     var host = this.host;
     var prefix = this.urlPrefix();
 
-    // FxA OAuth API requires singular 'client' when the record id is set
-    if (record) {
+    if (id || record.__attributes) {
       url.push('client');
     } else {
       url.push('clients');
