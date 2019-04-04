@@ -100,6 +100,12 @@ function createServer(db) {
     'wrapWrapKb'
   ])))
 
+  // Dump get/set methods mainly for development
+  if (process.env.NODE_ENV === "dev" && db.getDump && db.setDump) {
+    api.get('/dump', op(req => db.getDump()))
+    api.put('/dump', withIdAndBody(db.setDump))
+  }
+
   api.get('/account/:id', withIdAndBody(db.account))
   api.del('/account/:id', withIdAndBody(db.deleteAccount))
   api.put('/account/:id', withIdAndBody(db.createAccount))
@@ -113,6 +119,8 @@ function createServer(db) {
   )
   api.post('/account/:id/locale', withIdAndBody(db.updateLocale))
   api.get('/account/:id/sessions', withIdAndBody(db.sessions))
+
+  api.get('/account/:id/subscriptions', withIdAndBody(db.accountSubscriptions));
 
   api.get('/account/:id/emails', withIdAndBody(db.accountEmails))
   api.post('/account/:id/emails', withIdAndBody(db.createEmail))

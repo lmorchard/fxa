@@ -25,10 +25,11 @@ var unblockCodes = {}
 var emailBounces = {}
 var emails = {}
 var signinCodes = {}
-const totpTokens = {}
-const recoveryCodes = {}
-const recoveryKeys = {}
-const devicesByRefreshTokenId = {}
+var totpTokens = {}
+var recoveryCodes = {}
+var recoveryKeys = {}
+var devicesByRefreshTokenId = {}
+var subscriptions = {}
 
 var DEVICE_FIELDS = [
   'sessionTokenId',
@@ -1171,7 +1172,19 @@ module.exports = function (log, error) {
       })
   }
 
+  Memory.prototype.accountSubscriptions = function (uid) {
+    return P.resolve(
+      Object.values(subscriptions)
+        .filter(record =>
+          record.uid
+          && record.uid.toString('hex') === uid.toString('hex')
+        )
+    );
+  }
+
   Memory.prototype.accountEmails = function (uid) {
+    log.info('Mem.accountEmails', { uid })
+
     const userEmails = []
 
     Object.keys(emails).forEach(function (key) {
@@ -1495,6 +1508,97 @@ module.exports = function (log, error) {
 
         return {}
       })
+  }
+
+  // Dump get/set methods mainly for development
+  Memory.prototype.getDump = function () {
+    return P.resolve({
+      accounts,
+      uidByNormalizedEmail,
+      sessionTokens,
+      keyFetchTokens,
+      unverifiedTokens,
+      accountResetTokens,
+      passwordChangeTokens,
+      passwordForgotTokens,
+      reminders,
+      securityEvents,
+      unblockCodes,
+      emailBounces,
+      emails,
+      signinCodes,
+      totpTokens,
+      recoveryCodes,
+      recoveryKeys,
+      devicesByRefreshTokenId,
+      subscriptions,
+    });
+  }
+
+  Memory.prototype.setDump = function (uid, data) {
+    const rehydrate = thing => {
+      if (Array.isArray(thing)) {
+        return thing.map(rehydrate);
+      } else if (!!thing && typeof thing === "object") {
+        if (thing.type === "Buffer") {
+          return Buffer.from(thing.data);
+        } else {
+          return Object
+            .entries(thing)
+            .reduce((a, [k, v]) => ({
+              ...a, [k]: rehydrate(v)
+            }), {});
+        }
+      }
+      return thing; 
+    }
+
+    const newData = {
+      accounts,
+      uidByNormalizedEmail,
+      sessionTokens,
+      keyFetchTokens,
+      unverifiedTokens,
+      accountResetTokens,
+      passwordChangeTokens,
+      passwordForgotTokens,
+      reminders,
+      securityEvents,
+      unblockCodes,
+      emailBounces,
+      emails,
+      signinCodes,
+      totpTokens,
+      recoveryCodes,
+      recoveryKeys,
+      devicesByRefreshTokenId,
+      subscriptions,
+      ...rehydrate(data),
+    };
+
+    ({
+      accounts,
+      uidByNormalizedEmail,
+      sessionTokens,
+      keyFetchTokens,
+      unverifiedTokens,
+      accountResetTokens,
+      passwordChangeTokens,
+      passwordForgotTokens,
+      reminders,
+      securityEvents,
+      unblockCodes,
+      emailBounces,
+      emails,
+      signinCodes,
+      totpTokens,
+      recoveryCodes,
+      recoveryKeys,
+      devicesByRefreshTokenId,
+      subscriptions,
+    } = newData);
+
+    return P.resolve(newData)
   }
 
   // UTILITY FUNCTIONS
