@@ -115,7 +115,7 @@ module.exports = (log, db, config, customs, oauthdb, subscriptionsBackend) => {
           const plans = await subscriptionsBackend.listPlans();
           const selectedPlan = plans.filter(p => p.plan_id === planId)[0];
           if (!selectedPlan) { 
-            // TODO: Throw an error on unknown plan id!
+            throw error.unknownSubscriptionPlan();
           }
           productName = selectedPlan.product_id;
         } catch {
@@ -128,7 +128,7 @@ module.exports = (log, db, config, customs, oauthdb, subscriptionsBackend) => {
           const paymentResult =
             await subscriptionsBackend.createSubscription(uid, token, planId);
           if (!paymentResult) {
-            // TODO: Throw an error on backend subscription fail
+            throw error.rejectedSubscriptionPaymentToken();
           }
           subscriptionId = paymentResult.sub_id;
         } catch {

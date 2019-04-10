@@ -86,6 +86,8 @@ const ERRNO = {
   EXPIRED_AUTHORIZATION_CODE: 174,
   INVALID_PKCE_CHALLENGE: 175,
   UNKNOWN_SUBSCRIPTION: 176,
+  UNKNOWN_SUBSCRIPTION_PLAN: 177,
+  REJECTED_SUBSCRIPTION_PAYMENT_TOKEN: 178,
 
   SERVER_BUSY: 201,
   FEATURE_NOT_ENABLED: 202,
@@ -1042,6 +1044,28 @@ AppError.unknownSubscription = (subscriptionId) => {
     message: 'Unknown subscription'
   }, {
     subscriptionId
+  });
+};
+
+AppError.unknownSubscriptionPlan = (planId) => {
+  return new AppError({
+    code: 400,
+    error: 'Bad Request',
+    errno: ERRNO.UNKNOWN_SUBSCRIPTION_PLAN,
+    message: 'Unknown subscription plan'
+  }, {
+    planId
+  });
+};
+
+AppError.rejectedSubscriptionPaymentToken = (token) => {
+  return new AppError({
+    code: 400,
+    error: 'Bad Request',
+    errno: ERRNO.REJECTED_SUBSCRIPTION_PAYMENT_TOKEN,
+    message: 'Rejected subscription payment token'
+  }, {
+    token
   });
 };
 
