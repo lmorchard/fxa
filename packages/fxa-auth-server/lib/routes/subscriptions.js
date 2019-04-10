@@ -4,7 +4,7 @@
 
 'use strict';
 
-const errors = require('../error');
+const error = require('../error');
 const isA = require('joi');
 
 module.exports = (log, db, config, customs, oauthdb, subscriptionsBackend) => {
@@ -30,26 +30,23 @@ module.exports = (log, db, config, customs, oauthdb, subscriptionsBackend) => {
       },
       handler: async function (request) {
         log.begin('getSubscriptionCapabilities', request);
+        // TODO: is this where to get client_id?
         const { uid, client_id } = request.auth.credentials;
-
+        const capabilities = new Set();
+        const capabilitiesForClient = clientCapabilities[client_id] || [];
         const subs = await db.fetchAccountSubscriptions(uid);
-        const capabilitiesForSubs = new Set(subs.reduce(
-          (list, s) => list.concat(productCapabilities[s.productName] || []),
-          []
-        ));
-        
-        const capabilitiesForClient = new Set(clientCapabilities[client_id] || []);
-
-        const capabilities = [];
-        for (let c1 of capabilitiesForClient) {
-          if (capabilitiesForSubs.has(c1)) {
-            capabilities.push(c1);
+        for (let sub of subs) {
+          const capabilitiesForProduct = productCapabilities[sub.productName] || [];
+          for (let cap of capabilitiesForClient) {
+            if (capabilitiesForProduct.includes(cap)) {
+              capabilities.add(cap);
+            }
           }
         }
-
-        return capabilities;
+        return Array.from(capabilities);
       }
     },
+
     {
       method: 'GET',
       path: '/subscriptions/plans',
@@ -60,10 +57,15 @@ module.exports = (log, db, config, customs, oauthdb, subscriptionsBackend) => {
       },
       handler: async function (request) {
         log.begin('getSubscriptionPlans', request);
-        const plans = await subscriptionsBackend.listPlans();
-        return plans;
+        try {
+          const plans = await subscriptionsBackend.listPlans();
+          return plans;
+        } catch {
+          throw error.backendServiceFailure();
+        }
       }
     },
+    
     {
       method: 'GET',
       path: '/subscriptions/active',
@@ -79,6 +81,7 @@ module.exports = (log, db, config, customs, oauthdb, subscriptionsBackend) => {
         return subs;
       }
     },
+    
     {
       method: 'POST',
       path: '/subscriptions/active',
@@ -106,21 +109,31 @@ module.exports = (log, db, config, customs, oauthdb, subscriptionsBackend) => {
         const planId = request.payload.plan_id;
         const token = request.payload.token;
 
-        // Find the selected plan and get its product ID
-        const plans = await subscriptionsBackend.listPlans();
-        const selectedPlan = plans.filter(p => p.plan_id === planId)[0];
-        if (!selectedPlan) { 
-          // TODO: Throw an error on unknown plan id!
+        let productName;
+        try {
+          // Find the selected plan and get its product ID
+          const plans = await subscriptionsBackend.listPlans();
+          const selectedPlan = plans.filter(p => p.plan_id === planId)[0];
+          if (!selectedPlan) { 
+            // TODO: Throw an error on unknown plan id!
+          }
+          productName = selectedPlan.product_id;
+        } catch {
+          throw error.backendServiceFailure();
         }
-        const productName = selectedPlan.product_id;
 
-        // TODO: TBD from SubHub
-        const paymentResult =
-          await subscriptionsBackend.createSubscription(uid, token, planId);
-        if (!paymentResult) {
-          // TODO: Throw an error on backend subscription fail
+        let subscriptionId;
+        try {
+          // TODO: TBD from SubHub
+          const paymentResult =
+            await subscriptionsBackend.createSubscription(uid, token, planId);
+          if (!paymentResult) {
+            // TODO: Throw an error on backend subscription fail
+          }
+          subscriptionId = paymentResult.sub_id;
+        } catch {
+          throw error.backendServiceFailure();
         }
-        const subscriptionId = paymentResult.sub_id;
         
         const dbResult = await db.createAccountSubscription({
           uid,
@@ -132,6 +145,7 @@ module.exports = (log, db, config, customs, oauthdb, subscriptionsBackend) => {
         return { subscriptionId };
       }
     },
+    
     {
       // Delete existing subscription
       method: 'DELETE',
@@ -148,7 +162,26 @@ module.exports = (log, db, config, customs, oauthdb, subscriptionsBackend) => {
       },
       handler: async function (request) {
         log.begin('deleteSubscription', request);
-        return { deleteSubs: true };
+        const uid = request.auth.credentials.uid;
+        const subscriptionId = request.params.subscriptionId;
+
+        const subscription =
+          await db.getAccountSubscription(uid, subscriptionId);
+        if (!subscription) {
+          throw error.unknownSubscription(); 
+        }
+
+        try {
+          // TODO: TBD from SubHub
+          const paymentResult =
+            await subscriptionsBackend.cancelSubscription(uid, subscriptionId);
+        } catch {
+          throw error.backendServiceFailure();
+        }
+
+        const dbResult = await db.deleteAccountSubscription(uid, subscriptionId);
+
+        return {};
       }
     },
   ];

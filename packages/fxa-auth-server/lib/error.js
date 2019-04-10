@@ -85,6 +85,7 @@ const ERRNO = {
   MISMATCH_AUTHORIZATION_CODE: 173,
   EXPIRED_AUTHORIZATION_CODE: 174,
   INVALID_PKCE_CHALLENGE: 175,
+  UNKNOWN_SUBSCRIPTION: 176,
 
   SERVER_BUSY: 201,
   FEATURE_NOT_ENABLED: 202,
@@ -1030,6 +1031,17 @@ AppError.invalidPkceChallenge = (pkceHashValue) => {
     message: 'Public clients require PKCE OAuth parameters'
   }, {
     pkceHashValue
+  });
+};
+
+AppError.unknownSubscription = (subscriptionId) => {
+  return new AppError({
+    code: 404,
+    error: 'Not Found',
+    errno: ERRNO.UNKNOWN_SUBSCRIPTION,
+    message: 'Unknown subscription'
+  }, {
+    subscriptionId
   });
 };
 

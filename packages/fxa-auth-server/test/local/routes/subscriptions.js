@@ -69,8 +69,7 @@ describe('subscriptions', () => {
         return { id: MOCK_CLIENT_ID, name: 'mock client' };
       })
     });
-    subscriptionsBackend = mocks.mockSubscriptionsBackend({
-    });
+    subscriptionsBackend = mocks.mockSubscriptionsBackend();
     requestOptions = {
       metricsContext: mocks.mockMetricsContext(),
       credentials: {
@@ -90,23 +89,21 @@ describe('subscriptions', () => {
   describe('GET /subscriptions/capabilities', () => {
     it('should report subscription capabilities for client', () => {
       config = {
-        "subscriptions": {
-          "productCapabilities": {
-            "Prod1": [ "Cap1", "Cap2", "Cap3" ],
-            "Prod2": [ "Cap3", "Cap4", "Cap5" ],
-            "Prod3": [ "Cap1", "Cap2", "Cap3", "Cap4", "Cap5", "Cap6", "Cap7" ]
+        'subscriptions': {
+          'productCapabilities': {
+            'Prod1': [ 'Cap1', 'Cap2', 'Cap3' ],
+            'Prod2': [ 'Cap3', 'Cap4', 'Cap5' ],
+            'Prod3': [ 'Cap1', 'Cap2', 'Cap3', 'Cap4', 'Cap5', 'Cap6', 'Cap7' ]
           },
-          "clientCapabilities": {
-            "dcdb5ae7add825d2": [ "Cap0", "Cap1", "Cap3", "Cap5", "Cap6" ],
+          'clientCapabilities': {
+            'dcdb5ae7add825d2': [ 'Cap0', 'Cap1', 'Cap3', 'Cap5', 'Cap6' ],
           }
         }
       };
-      const clientId = "dcdb5ae7add825d2";
-      const subscriptions = [
-        { productName: "Prod1" },
-        { productName: "Prod2" },
-      ];
-      const expectedCapabilities = [ "Cap1", "Cap3", "Cap5" ];
+      const clientId = 'dcdb5ae7add825d2';
+      const subscriptions = [ 'Prod1', 'Prod2', 'Prod4']
+        .map(productName => ({ productName }));
+      const expectedCapabilities = [ 'Cap1', 'Cap3', 'Cap5' ];
       
       db.fetchAccountSubscriptions = sinon.spy(async (uid) => subscriptions);
 
@@ -138,7 +135,14 @@ describe('subscriptions', () => {
       });
     });
 
-    it('should correctly handle subscription backend failure');
+    it('should correctly handle payment backend failure', () => {
+      subscriptionsBackend = mocks.mockSubscriptionsBackend({
+        listPlans: sinon.spy(async () => { throw 'PANIC' })
+      });
+      return runTest('/subscriptions/plans', requestOptions).then(assert.fail, err => {
+        assert.deepEqual(err.errno, error.ERRNO.BACKEND_SERVICE_FAILURE);
+      });
+    });
   });
 
   describe('GET /subscriptions/active', () => {
@@ -150,8 +154,6 @@ describe('subscriptions', () => {
         assert.deepEqual(res, ACTIVE_SUBSCRIPTIONS);
       });
     });
-
-    it('should correctly handle subscription backend failure');
   });
 
   describe('POST /subscriptions/active', () => {
@@ -200,7 +202,55 @@ describe('subscriptions', () => {
       });
     });
 
-    it('should correctly handle subscription backend failure');
+    it('should correctly handle payment backend failure on listing plans', () => {
+      subscriptionsBackend = mocks.mockSubscriptionsBackend({
+        listPlans: sinon.spy(async () => { throw 'PANIC' }),
+        createSubscription: sinon.spy(
+          async (uid, token, plan_id) => ({ sub_id: SUBSCRIPTION_ID_1 })
+        )
+      });
+      return runTest(
+        '/subscriptions/active',
+        { 
+          ...requestOptions,
+          method: 'POST',
+          payload: {
+            ...requestOptions.payload,
+            plan_id: PLANS[0].plan_id,
+            token: PAYMENT_TOKEN_VALID,
+          },
+        }
+      ).then(assert.fail, err => {
+        assert.deepEqual(err.errno, error.ERRNO.BACKEND_SERVICE_FAILURE);
+        assert.equal(subscriptionsBackend.createSubscription.callCount, 0);
+        assert.equal(db.createAccountSubscription.callCount, 0);
+      });
+    });
+
+    it('should correctly handle payment backend failure on create', () => {
+      subscriptionsBackend = mocks.mockSubscriptionsBackend({
+        listPlans: sinon.spy(async () => PLANS),
+        createSubscription: sinon.spy(
+          async (uid, token, plan_id) => { throw 'PANIC' }
+        )
+      });
+      return runTest(
+        '/subscriptions/active',
+        { 
+          ...requestOptions,
+          method: 'POST',
+          payload: {
+            ...requestOptions.payload,
+            plan_id: PLANS[0].plan_id,
+            token: PAYMENT_TOKEN_VALID,
+          },
+        }
+      ).then(assert.fail, err => {
+        assert.deepEqual(err.errno, error.ERRNO.BACKEND_SERVICE_FAILURE);
+        assert.equal(db.createAccountSubscription.callCount, 0);
+      });
+    });
+
     it('should correctly handle unknown plan');
     it('should correctly handle payment token rejection');
   });
@@ -212,10 +262,83 @@ describe('subscriptions', () => {
   });
 
   describe('DELETE /subscriptions/active/{subscriptionId}', () => {
-    it('should allow cancellation of an existing subscription');
-    it('should correctly handle unknown subscription');
-    it('should correctly handle subscription backend failure');
-    it('should not delete subscription from DB after backend failure');
+    beforeEach(() => {
+      subscriptionsBackend = mocks.mockSubscriptionsBackend({
+        cancelSubscription: sinon.spy(
+          async (uid, subscriptionId) => true
+        )
+      });
+      db.deleteAccountSubscription = sinon.spy(
+        async (uid, subscriptionId) => ({})
+      );
+      db.fetchAccountSubscriptions = sinon.spy(
+        async (uid) => ACTIVE_SUBSCRIPTIONS
+          .filter(s => s.uid === uid && s.subscriptionId === subscriptionId)
+      );
+      db.getAccountSubscription = sinon.spy(
+        async (uid, subscriptionId) => ACTIVE_SUBSCRIPTIONS
+          .filter(s => s.uid === uid && s.subscriptionId === subscriptionId)[0]
+      );
+    });
+
+    it('should support cancellation of an existing subscription', () => {
+      return runTest(
+        '/subscriptions/active/{subscriptionId}',
+        { 
+          ...requestOptions,
+          method: 'DELETE',
+          params: { subscriptionId: SUBSCRIPTION_ID_1 }
+        }
+      ).then(res => {
+        assert.deepEqual(
+          subscriptionsBackend.cancelSubscription.args,
+          [ [ UID, SUBSCRIPTION_ID_1 ] ]
+        );
+        assert.deepEqual(
+          db.deleteAccountSubscription.args,
+          [ [ UID, SUBSCRIPTION_ID_1 ] ]
+        );
+        assert.deepEqual( res, {});
+      });
+    });
+
+    it('should report error for unknown subscription', () => {
+      const badSub = "notasub";
+      return runTest(
+        '/subscriptions/active/{subscriptionId}',
+        { 
+          ...requestOptions,
+          method: 'DELETE',
+          params: { subscriptionId: badSub }
+        }
+      ).then(assert.fail, err => {
+        assert.deepEqual(db.getAccountSubscription.args, [ [ UID, badSub ] ]);
+        assert.deepEqual(subscriptionsBackend.cancelSubscription.args, []);
+        assert.deepEqual(db.deleteAccountSubscription.args, []);
+        assert.deepEqual(err.errno, error.ERRNO.UNKNOWN_SUBSCRIPTION);
+      });
+    });
+
+    it('should not delete subscription from DB after payment backend failure', () => {
+      subscriptionsBackend = mocks.mockSubscriptionsBackend({
+        cancelSubscription: sinon.spy(
+          async (uid, subscriptionId) => { throw 'PANIC' }
+        )
+      });
+      return runTest(
+        '/subscriptions/active/{subscriptionId}',
+        { 
+          ...requestOptions,
+          method: 'DELETE',
+          params: { subscriptionId: SUBSCRIPTION_ID_1 }
+        }
+      ).then(assert.fail, err => {
+        assert.deepEqual(db.getAccountSubscription.args, [ [ UID, SUBSCRIPTION_ID_1 ] ]);
+        assert.deepEqual(subscriptionsBackend.cancelSubscription.args, [ [ UID, SUBSCRIPTION_ID_1 ] ]);
+        assert.deepEqual(db.deleteAccountSubscription.args, []);
+        assert.deepEqual(err.errno, error.ERRNO.BACKEND_SERVICE_FAILURE);
+      });
+    });
   });
 
 });
