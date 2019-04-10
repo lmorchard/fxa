@@ -569,6 +569,20 @@ const conf = convict({
     env: 'DEVICE_NOTIFICATIONS_ENABLED',
     default: true
   },
+  subscriptions: {
+    productCapabilities: {
+      doc: "Mappings from product names to subscription capability names",
+      format: Object,
+      env: "SUBSCRIPTION_PRODUCT_CAPABILITIES",
+      default: {}
+    },
+    clientCapabilities: {
+      doc: "Mappings from OAuth client IDs to relevant subscription capabilities",
+      format: Object,
+      env: "SUBSCRIPTION_CLIENT_CAPABILITIES",
+      default: {}
+    }
+  },
   oauth: {
     url: {
       format: 'url',

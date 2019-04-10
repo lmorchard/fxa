@@ -21,6 +21,7 @@ module.exports = function (
   // Various extra helpers.
   const push = require('../push')(log, db, config);
   const pushbox = require('../pushbox')(log, config);
+  const subscriptionsBackend = require('../subscriptions')(log, config);
   const devicesImpl = require('../devices')(log, db, push);
   const signinUtils = require('./utils/signin')(log, config, customs, db, mailer);
   const verificationReminders = require('../verification-reminders')(log, config);
@@ -62,6 +63,7 @@ module.exports = function (
   const totp = require('./totp')(log, db, mailer, customs, config.totp);
   const recoveryCodes = require('./recovery-codes')(log, db, config.totp, customs, mailer);
   const recoveryKey = require('./recovery-key')(log, db, Password, config.verifierVersion, customs, mailer);
+  const subscriptions = require('./subscriptions')(log, db, config, customs, oauthdb, subscriptionsBackend);
   const util = require('./util')(
     log,
     config,
@@ -86,7 +88,8 @@ module.exports = function (
     totp,
     unblockCodes,
     util,
-    recoveryKey
+    recoveryKey,
+    subscriptions
   );
   v1Routes.forEach(r => { r.path = `${basePath  }/v1${  r.path}`; });
   defaults.forEach(r => { r.path = basePath + r.path; });

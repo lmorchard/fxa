@@ -35,4 +35,15 @@
     "key": "Correct_Horse_Battery_Staple_1",
     "maxTTL": "28 days"
   },
+  "subscriptions": {
+    "productCapabilities": {
+      "exampleProd1": [ "exampleCap1", "exampleCap2", "exampleCap3" ],
+      "exampleProd2": [ "exampleCap4", "exampleCap5" ],
+      "exampleProd3": [ "exampleCap1", "exampleCap2", "exampleCap3", "exampleCap4", "exampleCap5" ]
+    },
+    "clientCapabilities": {
+      "dcdb5ae7add825d2": [ "exampleCap1", "exampleCap3", "exampleCap5" ],
+      "325b4083e32fe8e7": [ "exampleCap2", "exampleCap4", "exampleCap6" ]
+    }
+  }
 }

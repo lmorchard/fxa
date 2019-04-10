@@ -1358,6 +1358,58 @@ module.exports = (
     return this.pool.del(SAFE_URLS.deleteRecoveryKey, { uid });
   };
 
+  SAFE_URLS.createAccountSubscription = new SafeUrl(
+    '/account/:id/subscriptions/:subscriptionId',
+    'db.createAccountSubscription'
+  );
+  DB.prototype.createAccountSubscription = function (data) {
+    const { uid, subscriptionId, productName, createdAt } = data;
+    log.trace('DB.createAccountSubscription', data);
+    return this.pool.put(
+      SAFE_URLS.createAccountSubscription,
+      { uid, subscriptionId },
+      { productName, createdAt }
+    );
+    /*
+    .then(
+      () => data,
+      err => {
+        if (isRecordAlreadyExistsError(err)) {
+          err = error.accountExists(data.email);
+        }
+        throw err;
+      }
+    );
+    */
+  };
+
+  SAFE_URLS.getAccountSubscription = new SafeUrl(
+    '/account/:id/subscriptions/:subscriptionId',
+    'db.getAccountSubscription'
+  );
+  DB.prototype.getAccountSubscription = function (uid, subscriptionId) {
+    log.trace('DB.getAccountSubscription', { uid, subscriptionId });
+    return this.pool.get(SAFE_URLS.getAccountSubscription, { uid, subscriptionId });
+  };
+
+  SAFE_URLS.deleteAccountSubscription = new SafeUrl(
+    '/account/:id/subscriptions/:subscriptionId',
+    'db.deleteAccountSubscription'
+  );
+  DB.prototype.deleteAccountSubscription = function (uid, subscriptionId) {
+    log.trace('DB.deleteAccountSubscription', { uid, subscriptionId });
+    return this.pool.del(SAFE_URLS.deleteAccountSubscription, { uid, subscriptionId });
+  };
+
+  SAFE_URLS.fetchAccountSubscriptions = new SafeUrl(
+    '/account/:id/subscriptions',
+    'db.fetchAccountSubscriptions'
+  );
+  DB.prototype.fetchAccountSubscriptions = function (uid) {
+    log.trace('DB.fetchAccountSubscriptions', { uid });
+    return this.pool.fetch(SAFE_URLS.fetchAccountSubscriptions, { uid });
+  };
+
   DB.prototype.safeRedisGet = function (key) {
     return this.redis.get(key)
       .catch(err => {

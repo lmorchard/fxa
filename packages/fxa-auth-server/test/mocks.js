@@ -83,7 +83,11 @@ const DB_METHOD_NAMES = [
   'verifyEmail',
   'verifyTokens',
   'verifyTokenCode',
-  'verifyTokensWithMethod'
+  'verifyTokensWithMethod',
+  'createAccountSubscription',
+  'getAccountSubscription',
+  'deleteAccountSubscription',
+  'fetchAccountSubscriptions'
 ];
 
 const OAUTHDB_METHOD_NAMES = [
@@ -159,6 +163,15 @@ const PUSHBOX_METHOD_NAMES = [
   'store'
 ];
 
+const SUBSCRIPTIONS_BACKEND_METHOD_NAMES = [
+  'listPlans',
+  'getCustomer',
+  'updateCustomer',
+  'listSubscriptions',
+  'createSubscription',
+  'cancelSubscription'
+];
+
 module.exports = {
   MOCK_PUSH_KEY: 'BDLugiRzQCANNj5KI1fAqui8ELrE7qboxzfa5K_R0wnUoJ89xY1D_SOXI_QJKNmellykaW_7U2BZ7hnrPW3A3LM',
   generateMetricsContext: generateMetricsContext,
@@ -173,7 +186,9 @@ module.exports = {
   mockPush,
   mockPushbox,
   mockRequest,
+  mockSubscriptionsBackend,
   mockVerificationReminders,
+  mockSubscriptionsBackend,
 };
 
 function mockCustoms (errors) {
@@ -461,6 +476,16 @@ function mockPushbox (methods) {
     }
   });
   return pushbox;
+}
+
+function mockSubscriptionsBackend(methods) {
+  const subscriptionsBackend = Object.assign({}, methods);
+  SUBSCRIPTIONS_BACKEND_METHOD_NAMES.forEach((name) => {
+    if (! subscriptionsBackend[name]) {
+      subscriptionsBackend[name] = sinon.spy(() => P.resolve());
+    }
+  });
+  return subscriptionsBackend;
 }
 
 function mockDevices (data, errors) {
