@@ -32,18 +32,19 @@ module.exports = (log, db, config, customs, oauthdb, subscriptionsBackend) => {
         log.begin('getSubscriptionCapabilities', request);
         // TODO: is this where to get client_id?
         const { uid, client_id } = request.auth.credentials;
-        const capabilities = new Set();
-        const capabilitiesForClient = clientCapabilities[client_id] || [];
-        const subs = await db.fetchAccountSubscriptions(uid);
-        for (const sub of subs) {
-          const capabilitiesForProduct = productCapabilities[sub.productName] || [];
-          for (const cap of capabilitiesForClient) {
-            if (capabilitiesForProduct.includes(cap)) {
-              capabilities.add(cap);
+        const capabilitiesToReveal = new Set();
+        const clientVisibleCapabilities = clientCapabilities[client_id] || [];
+        const subscriptions = await db.fetchAccountSubscriptions(uid);
+        for (const subcription of subscriptions) {
+          const capabilitiesFromProduct =
+            productCapabilities[subscription.productName] || [];
+          for (const capability of clientVisibleCapabilities) {
+            if (capabilitiesFromProduct.includes(capability)) {
+              capabilitiesToReveal.add(capability);
             }
           }
         }
-        return Array.from(capabilities);
+        return Array.from(capabilitiesToReveal);
       }
     },
 
