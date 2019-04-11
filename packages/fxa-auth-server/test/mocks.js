@@ -188,7 +188,6 @@ module.exports = {
   mockRequest,
   mockSubscriptionsBackend,
   mockVerificationReminders,
-  mockSubscriptionsBackend,
 };
 
 function mockCustoms (errors) {

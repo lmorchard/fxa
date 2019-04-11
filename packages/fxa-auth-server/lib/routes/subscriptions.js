@@ -35,9 +35,9 @@ module.exports = (log, db, config, customs, oauthdb, subscriptionsBackend) => {
         const capabilities = new Set();
         const capabilitiesForClient = clientCapabilities[client_id] || [];
         const subs = await db.fetchAccountSubscriptions(uid);
-        for (let sub of subs) {
+        for (const sub of subs) {
           const capabilitiesForProduct = productCapabilities[sub.productName] || [];
-          for (let cap of capabilitiesForClient) {
+          for (const cap of capabilitiesForClient) {
             if (capabilitiesForProduct.includes(cap)) {
               capabilities.add(cap);
             }
@@ -58,14 +58,13 @@ module.exports = (log, db, config, customs, oauthdb, subscriptionsBackend) => {
       handler: async function (request) {
         log.begin('getSubscriptionPlans', request);
         try {
-          const plans = await subscriptionsBackend.listPlans();
-          return plans;
-        } catch {
+          return subscriptionsBackend.listPlans();
+        } catch (err) {
           throw error.backendServiceFailure();
         }
       }
     },
-    
+
     {
       method: 'GET',
       path: '/subscriptions/active',
@@ -81,7 +80,7 @@ module.exports = (log, db, config, customs, oauthdb, subscriptionsBackend) => {
         return subs;
       }
     },
-    
+
     {
       method: 'POST',
       path: '/subscriptions/active',
@@ -105,7 +104,6 @@ module.exports = (log, db, config, customs, oauthdb, subscriptionsBackend) => {
         log.begin('createSubscription', request);
 
         const uid = request.auth.credentials.uid;
-        const sessionToken = request.auth.credentials;
         const planId = request.payload.plan_id;
         const token = request.payload.token;
 
@@ -114,11 +112,11 @@ module.exports = (log, db, config, customs, oauthdb, subscriptionsBackend) => {
           // Find the selected plan and get its product ID
           const plans = await subscriptionsBackend.listPlans();
           const selectedPlan = plans.filter(p => p.plan_id === planId)[0];
-          if (!selectedPlan) { 
+          if (! selectedPlan) {
             throw error.unknownSubscriptionPlan();
           }
           productName = selectedPlan.product_id;
-        } catch {
+        } catch (err) {
           throw error.backendServiceFailure();
         }
 
@@ -127,15 +125,15 @@ module.exports = (log, db, config, customs, oauthdb, subscriptionsBackend) => {
           // TODO: TBD from SubHub
           const paymentResult =
             await subscriptionsBackend.createSubscription(uid, token, planId);
-          if (!paymentResult) {
+          if (! paymentResult) {
             throw error.rejectedSubscriptionPaymentToken();
           }
           subscriptionId = paymentResult.sub_id;
-        } catch {
+        } catch (err) {
           throw error.backendServiceFailure();
         }
-        
-        const dbResult = await db.createAccountSubscription({
+
+        await db.createAccountSubscription({
           uid,
           subscriptionId,
           productName,
@@ -145,7 +143,7 @@ module.exports = (log, db, config, customs, oauthdb, subscriptionsBackend) => {
         return { subscriptionId };
       }
     },
-    
+
     {
       // Delete existing subscription
       method: 'DELETE',
@@ -167,19 +165,18 @@ module.exports = (log, db, config, customs, oauthdb, subscriptionsBackend) => {
 
         const subscription =
           await db.getAccountSubscription(uid, subscriptionId);
-        if (!subscription) {
-          throw error.unknownSubscription(); 
+        if (! subscription) {
+          throw error.unknownSubscription();
         }
 
         try {
           // TODO: TBD from SubHub
-          const paymentResult =
-            await subscriptionsBackend.cancelSubscription(uid, subscriptionId);
-        } catch {
+          await subscriptionsBackend.cancelSubscription(uid, subscriptionId);
+        } catch (err) {
           throw error.backendServiceFailure();
         }
 
-        const dbResult = await db.deleteAccountSubscription(uid, subscriptionId);
+        await db.deleteAccountSubscription(uid, subscriptionId);
 
         return {};
       }

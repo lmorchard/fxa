@@ -19,18 +19,18 @@ const MOCK_CLIENT_ID = '0123456789ABCDEF';
 const NOW = Date.now();
 const PLANS = [
   {
-    plan_id: "firefox_pro_basic_823",
-    product_id: "firefox_pro_basic",
-    interval: "month",
-    amount: "123",
-    currency: "usd"
+    plan_id: 'firefox_pro_basic_823',
+    product_id: 'firefox_pro_basic',
+    interval: 'month',
+    amount: '123',
+    currency: 'usd'
   },
   {
-    plan_id: "firefox_pro_basic_999",
-    product_id: "firefox_pro_pro",
-    interval: "month",
-    amount: "456",
-    currency: "usd"
+    plan_id: 'firefox_pro_basic_999',
+    product_id: 'firefox_pro_pro',
+    interval: 'month',
+    amount: '456',
+    currency: 'usd'
   }
 ];
 const SUBSCRIPTION_ID_1 = 'sub-8675309';
@@ -48,7 +48,7 @@ function runTest(routePath, requestOptions) {
   routes = require('../../../lib/routes/subscriptions')(
     log, db, config, customs, oauthdb, subscriptionsBackend
   );
-  route = getRoute(routes, routePath, requestOptions.method || "GET");
+  route = getRoute(routes, routePath, requestOptions.method || 'GET');
   request = mocks.mockRequest(requestOptions);
   request.emitMetricsEvent = sinon.spy(() => P.resolve({}));
 
@@ -104,12 +104,12 @@ describe('subscriptions', () => {
       const subscriptions = [ 'Prod1', 'Prod2', 'Prod4']
         .map(productName => ({ productName }));
       const expectedCapabilities = [ 'Cap1', 'Cap3', 'Cap5' ];
-      
+
       db.fetchAccountSubscriptions = sinon.spy(async (uid) => subscriptions);
 
       return runTest(
         '/subscriptions/capabilities',
-        { 
+        {
           ...requestOptions,
           credentials: {
             ...requestOptions.credentials,
@@ -137,7 +137,7 @@ describe('subscriptions', () => {
 
     it('should correctly handle payment backend failure', () => {
       subscriptionsBackend = mocks.mockSubscriptionsBackend({
-        listPlans: sinon.spy(async () => { throw 'PANIC' })
+        listPlans: sinon.spy(async () => { throw 'PANIC'; })
       });
       return runTest('/subscriptions/plans', requestOptions).then(assert.fail, err => {
         assert.deepEqual(err.errno, error.ERRNO.BACKEND_SERVICE_FAILURE);
@@ -167,7 +167,7 @@ describe('subscriptions', () => {
       db.createAccountSubscription = sinon.spy(async (data) => ({}));
       return runTest(
         '/subscriptions/active',
-        { 
+        {
           ...requestOptions,
           method: 'POST',
           payload: {
@@ -204,14 +204,14 @@ describe('subscriptions', () => {
 
     it('should correctly handle payment backend failure on listing plans', () => {
       subscriptionsBackend = mocks.mockSubscriptionsBackend({
-        listPlans: sinon.spy(async () => { throw 'PANIC' }),
+        listPlans: sinon.spy(async () => { throw 'PANIC'; }),
         createSubscription: sinon.spy(
           async (uid, token, plan_id) => ({ sub_id: SUBSCRIPTION_ID_1 })
         )
       });
       return runTest(
         '/subscriptions/active',
-        { 
+        {
           ...requestOptions,
           method: 'POST',
           payload: {
@@ -231,12 +231,12 @@ describe('subscriptions', () => {
       subscriptionsBackend = mocks.mockSubscriptionsBackend({
         listPlans: sinon.spy(async () => PLANS),
         createSubscription: sinon.spy(
-          async (uid, token, plan_id) => { throw 'PANIC' }
+          async (uid, token, plan_id) => { throw 'PANIC'; }
         )
       });
       return runTest(
         '/subscriptions/active',
-        { 
+        {
           ...requestOptions,
           method: 'POST',
           payload: {
@@ -254,7 +254,7 @@ describe('subscriptions', () => {
     it('should correctly handle unknown plan');
     it('should correctly handle payment token rejection');
   });
-  
+
   describe('POST /subscriptions/payment', () => {
     it('should allow updating of payment method');
     it('should correctly handle subscription backend failure');
@@ -273,7 +273,7 @@ describe('subscriptions', () => {
       );
       db.fetchAccountSubscriptions = sinon.spy(
         async (uid) => ACTIVE_SUBSCRIPTIONS
-          .filter(s => s.uid === uid && s.subscriptionId === subscriptionId)
+          .filter(s => s.uid === uid)
       );
       db.getAccountSubscription = sinon.spy(
         async (uid, subscriptionId) => ACTIVE_SUBSCRIPTIONS
@@ -284,7 +284,7 @@ describe('subscriptions', () => {
     it('should support cancellation of an existing subscription', () => {
       return runTest(
         '/subscriptions/active/{subscriptionId}',
-        { 
+        {
           ...requestOptions,
           method: 'DELETE',
           params: { subscriptionId: SUBSCRIPTION_ID_1 }
@@ -303,10 +303,10 @@ describe('subscriptions', () => {
     });
 
     it('should report error for unknown subscription', () => {
-      const badSub = "notasub";
+      const badSub = 'notasub';
       return runTest(
         '/subscriptions/active/{subscriptionId}',
-        { 
+        {
           ...requestOptions,
           method: 'DELETE',
           params: { subscriptionId: badSub }
@@ -322,12 +322,12 @@ describe('subscriptions', () => {
     it('should not delete subscription from DB after payment backend failure', () => {
       subscriptionsBackend = mocks.mockSubscriptionsBackend({
         cancelSubscription: sinon.spy(
-          async (uid, subscriptionId) => { throw 'PANIC' }
+          async (uid, subscriptionId) => { throw 'PANIC'; }
         )
       });
       return runTest(
         '/subscriptions/active/{subscriptionId}',
-        { 
+        {
           ...requestOptions,
           method: 'DELETE',
           params: { subscriptionId: SUBSCRIPTION_ID_1 }

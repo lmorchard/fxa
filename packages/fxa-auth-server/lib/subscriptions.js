@@ -4,12 +4,12 @@
 
 'use strict';
 
-const isA = require('joi');
-const error = require('./error');
-const createBackendServiceAPI = require('./backendService');
+// const isA = require('joi');
+// const error = require('./error');
+// const createBackendServiceAPI = require('./backendService');
 
 /*
- * The subscriptions backend is called "SubHub", a service managed outside the
+ * The subscriptions backend is called 'SubHub', a service managed outside the
  * FxA team to abstract away some details of payments processing.
  *
  * This library implements a little proxy in front of the SubHub API, allowing
@@ -30,16 +30,16 @@ module.exports = function (log, config) {
     timeout: 15000
   });
   */
-  
+
   return {
     async listPlans() {
       const dummyPlans = [
         {
-          plan_id: "firefox_pro_basic_823",
-          product_id: "firefox_pro_basic",
-          interval: "month",
-          amount: "123",
-          currency: "usd"
+          plan_id: 'firefox_pro_basic_823',
+          product_id: 'firefox_pro_basic',
+          interval: 'month',
+          amount: '123',
+          currency: 'usd'
         }
       ];
       return dummyPlans;
@@ -59,5 +59,5 @@ module.exports = function (log, config) {
 
     async cancelSubscription(uid, subscriptionId) {
     }
-  }
+  };
 };

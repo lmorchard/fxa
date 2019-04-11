@@ -571,15 +571,15 @@ const conf = convict({
   },
   subscriptions: {
     productCapabilities: {
-      doc: "Mappings from product names to subscription capability names",
+      doc: 'Mappings from product names to subscription capability names',
       format: Object,
-      env: "SUBSCRIPTION_PRODUCT_CAPABILITIES",
+      env: 'SUBSCRIPTION_PRODUCT_CAPABILITIES',
       default: {}
     },
     clientCapabilities: {
-      doc: "Mappings from OAuth client IDs to relevant subscription capabilities",
+      doc: 'Mappings from OAuth client IDs to relevant subscription capabilities',
       format: Object,
-      env: "SUBSCRIPTION_CLIENT_CAPABILITIES",
+      env: 'SUBSCRIPTION_CLIENT_CAPABILITIES',
       default: {}
     }
   },
