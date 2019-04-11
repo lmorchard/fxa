@@ -35,7 +35,7 @@ module.exports = (log, db, config, customs, oauthdb, subscriptionsBackend) => {
         const capabilitiesToReveal = new Set();
         const clientVisibleCapabilities = clientCapabilities[client_id] || [];
         const subscriptions = await db.fetchAccountSubscriptions(uid);
-        for (const subcription of subscriptions) {
+        for (const subscription of subscriptions) {
           const capabilitiesFromProduct =
             productCapabilities[subscription.productName] || [];
           for (const capability of clientVisibleCapabilities) {
@@ -59,7 +59,8 @@ module.exports = (log, db, config, customs, oauthdb, subscriptionsBackend) => {
       handler: async function (request) {
         log.begin('getSubscriptionPlans', request);
         try {
-          return subscriptionsBackend.listPlans();
+          const plans = await subscriptionsBackend.listPlans();
+          return plans;
         } catch (err) {
           throw error.backendServiceFailure();
         }
@@ -108,31 +109,32 @@ module.exports = (log, db, config, customs, oauthdb, subscriptionsBackend) => {
         const planId = request.payload.plan_id;
         const token = request.payload.token;
 
-        let productName;
+        // Find the selected plan and get its product ID
+        let plans;
         try {
-          // Find the selected plan and get its product ID
-          const plans = await subscriptionsBackend.listPlans();
-          const selectedPlan = plans.filter(p => p.plan_id === planId)[0];
-          if (! selectedPlan) {
-            throw error.unknownSubscriptionPlan();
-          }
-          productName = selectedPlan.product_id;
+          plans = await subscriptionsBackend.listPlans();
+        } catch (err) {
+          throw error.backendServiceFailure();
+        }
+        const selectedPlan = plans.filter(p => p.plan_id === planId)[0];
+        if (! selectedPlan) {
+          throw error.unknownSubscriptionPlan();
+        }
+        const productName = selectedPlan.product_id;
+
+        let paymentResult;
+        try {
+          // TODO: TBD from SubHub
+          paymentResult = await subscriptionsBackend.createSubscription(uid, token, planId);
         } catch (err) {
           throw error.backendServiceFailure();
         }
 
-        let subscriptionId;
-        try {
-          // TODO: TBD from SubHub
-          const paymentResult =
-            await subscriptionsBackend.createSubscription(uid, token, planId);
-          if (! paymentResult) {
-            throw error.rejectedSubscriptionPaymentToken();
-          }
-          subscriptionId = paymentResult.sub_id;
-        } catch (err) {
-          throw error.backendServiceFailure();
+        // TODO: TBD what token rejection looks like from SubHub as distinct from service failure
+        if (! paymentResult) {
+          throw error.rejectedSubscriptionPaymentToken();
         }
+        const subscriptionId = paymentResult.sub_id;
 
         await db.createAccountSubscription({
           uid,
@@ -142,6 +144,41 @@ module.exports = (log, db, config, customs, oauthdb, subscriptionsBackend) => {
         });
 
         return { subscriptionId };
+      }
+    },
+
+    {
+      method: 'POST',
+      path: '/subscriptions/updatePayment',
+      options: {
+        auth: {
+          strategy: 'sessionToken'
+        },
+        validate: {
+          payload: {
+            token: isA.string().required()
+          }
+        }
+      },
+      handler: async function (request) {
+        log.begin('updateSubscriptionPayment', request);
+        const uid = request.auth.credentials.uid;
+        const token = request.payload.token;
+
+        let paymentResult;
+        try {
+          // TODO: TBD from SubHub
+          paymentResult = await subscriptionsBackend.updateCustomer(uid, token);
+        } catch (err) {
+          throw error.backendServiceFailure();
+        }
+
+        // TODO: TBD what token rejection looks like from SubHub as distinct from service failure
+        if (! paymentResult) {
+          throw error.rejectedSubscriptionPaymentToken();
+        }
+
+        return {};
       }
     },
 
