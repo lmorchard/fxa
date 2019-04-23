@@ -34,7 +34,8 @@ const webpackConfig = {
       'webrtc',
       'styles/main.scss'
     ],
-    head: './head/boot.js'
+    head: './head/boot.js',
+    payment: './payment/app.js'
   },
 
   output: {
