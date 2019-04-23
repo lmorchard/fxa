@@ -1,10 +1,12 @@
-<div id="manage-subbscription" class="settings-unit">
+<div id="manage-subscription" class="settings-unit">
   <div class="settings-unit-stub">
     <header class="settings-unit-summary">
       <h2 class="settings-unit-title">{{#t}}Subscriptions{{/t}}</h2>
     </header>
-    <a class="settings-button primary-button settings-unit-navigate" href="{{paymentUrl}}/payment">
-    <span class="change-button">{{#t}}Manage…{{/t}}</span>
-    </a>
+    <form novalidate>
+      <button class="settings-button primary-button settings-unit-toggle" data-href="settings/display_name">
+          <span class="change-button">{{#t}}Manage…{{/t}}</span>
+      </button>
+    </form>
   </div>
 </div>

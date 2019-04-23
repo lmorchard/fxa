@@ -4,10 +4,12 @@
 
 'use strict';
 
-const Cocktail = require('cocktail');
-const FormView = require('../form');
+import Cocktail from 'cocktail';
+import FormView from '../form';
+
 const SettingsPanelMixin = require('../mixins/settings-panel-mixin');
 const Template = require('templates/settings/subscription.mustache');
+
 
 // FIXME: should be from configuration:
 const allowedLanguages = ['en-US'];
@@ -29,6 +31,14 @@ const View = FormView.extend({
 
   setInitialContext (context) {
     context.set('paymentUrl', this._paymentUrl);
+  },
+
+  submit () {
+    const account = this.user.getSignedInAccount();
+    account.createOAuthTokenForSubscriptions().then(accessToken => {
+      const managementUrl = this._paymentUrl + `/payment#accessToken=${accessToken.get('token')}`;
+      this.window.location.href = managementUrl;
+    });
   },
 
   supportSubscription () {

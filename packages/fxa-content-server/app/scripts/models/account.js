@@ -253,6 +253,27 @@ const Account = Backbone.Model.extend({
       });
   },
 
+  createOAuthTokenForSubscriptions () {
+    return this._generateAssertion()
+      .then((assertion) => {
+        const params = {
+          ttl: 900,
+          assertion: assertion,
+          // TODO: Configure client_id for a subscriptions management specific client
+          client_id: this._oAuthClientId, //eslint-disable-line camelcase
+          // TODO: Is this sufficient scope for subscriptions management?
+          scope: 'profile:email profile:subscriptions https://identity.mozilla.com/account/subscriptions'
+        };
+        return this._oAuthClient.getToken(params);
+      })
+      .then((result) => {
+        return new OAuthToken({
+          oAuthClient: this._oAuthClient,
+          token: result.access_token
+        });
+      });
+  },
+
   /**
      * Check the status of the account's current session. Status information
      * includes whether the session is verified, and if not, the reason
