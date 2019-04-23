@@ -6,7 +6,7 @@
 
 const flowMetrics = require('../flow-metrics');
 const logger = require('../logging/log')('routes.index');
-const vhost = require('vhost');
+// const vhost = require('vhost');
 
 module.exports = function (config) {
   let featureFlags;

@@ -35,10 +35,7 @@ const webpackConfig = {
       'styles/main.scss'
     ],
     head: './head/boot.js',
-    payment: './payment/app.js',
-    paymentDependencies: [
-      'lib/jquery',
-    ],
+    payment: './payment/app.js'
   },
 
   output: {
