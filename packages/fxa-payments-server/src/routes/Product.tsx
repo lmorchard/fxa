@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { connect, useDispatch } from 'react-redux';
-import { injectStripe, CardElement, Elements, ReactStripeElements } from 'react-stripe-elements';
+import React, { useContext, useState, useEffect, useCallback } from 'react';
+import { connect } from 'react-redux';
+import { injectStripe, CardElement, Elements as StripeElements, ReactStripeElements } from 'react-stripe-elements';
 import { Link } from 'react-router-dom';
-import { selectorsFromState, actions } from '../store';
+import { selectors, actions } from '../store';
+import { State } from '../store/types';
 
 import {
   Plan,
@@ -14,6 +15,7 @@ import {
 import LoadingSpinner from '../components/LoadingSpinner';
 import ProductValueProposition from '../components/ProductValueProposition';
 import { useCheckboxState } from '../lib/hooks';
+import AppContext from '../lib/AppContext';
 
 type ProductProps = {
   match: {
@@ -21,13 +23,15 @@ type ProductProps = {
       productId: string,
     }
   },
-  accessToken: string,
   isLoading: boolean,
   plans: PlansFetchState,
   createSubscriptionStatus: CreateSubscriptionFetchState,
   subscriptions: SubscriptionsFetchState,
   plansByProductId: Function,
   createSubscription: Function,
+  resetCreateSubscription: Function,
+  fetchPlans: Function,
+  fetchSubscriptions: Function,
 };
 
 export const Product = ({
@@ -36,21 +40,19 @@ export const Product = ({
       productId
     }
   },
-  accessToken,
   isLoading,
   plans,
   createSubscriptionStatus,
   subscriptions,
   plansByProductId,
   createSubscription,
+  resetCreateSubscription,
+  fetchPlans,
+  fetchSubscriptions,
 }: ProductProps) => {
+  const { accessToken } = useContext(AppContext);
+
   const [ planIdx, setPlanIdx ] = useState(0);
-
-  const dispatch = useDispatch();
-
-  const resetCreateSubscription = useCallback(() => {
-    dispatch(actions.resetCreateSubscription());
-  }, [ dispatch ]);
 
   // Reset subscription creation status on initial render.
   useEffect(() => {
@@ -60,10 +62,10 @@ export const Product = ({
   // Fetch plans on initial render, change in product ID, or auth change.
   useEffect(() => {
     if (accessToken) {
-      dispatch(actions.fetchPlans(accessToken));
-      dispatch(actions.fetchSubscriptions(accessToken));
+      fetchPlans(accessToken);
+      fetchSubscriptions(accessToken);
     }
-  }, [ dispatch, productId, accessToken ]);
+  }, [ accessToken, fetchPlans, fetchSubscriptions ]);
 
   if (isLoading) {
     return <LoadingSpinner />;
@@ -129,13 +131,13 @@ export const Product = ({
         )}
         <ProductValueProposition plan={selectedPlan} />
       </div>
-      <Elements>
+      <StripeElements>
         <SubscriptionForm {...{
           accessToken,
           createSubscription,
           selectedPlan,
         }} />
-      </Elements>
+      </StripeElements>
     </div>
   );
 };
@@ -202,8 +204,17 @@ export const SubscriptionFormRaw = ({
 export const SubscriptionForm = injectStripe(SubscriptionFormRaw);
 
 export default connect(
-  // TODO: replace this with a useSelector hook
-  selectorsFromState('isLoading', 'plans', 'subscriptions', 'createSubscriptionStatus', 'plansByProductId'),
-  // TODO: replace this with a useDispatch hook
-  { createSubscription: actions.createSubscriptionAndRefresh }
+  (state: State) => ({
+    isLoading: selectors.isLoading(state),
+    plans: selectors.plans(state),
+    subscriptions: selectors.subscriptions(state),
+    createSubscriptionStatus: selectors.createSubscriptionStatus(state),
+    plansByProductId: selectors.plansByProductId(state),    
+  }),
+  {
+    createSubscription: actions.createSubscriptionAndRefresh,
+    resetCreateSubscription: actions.resetCreateSubscription,
+    fetchPlans: actions.fetchPlans,
+    fetchSubscriptions: actions.fetchSubscriptions,
+  }
 )(Product);

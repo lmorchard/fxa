@@ -1,15 +1,6 @@
 import { ActionType as PromiseActionType } from 'redux-promise-middleware';
 import { Action, State, FetchState } from './types';
 
-type MappedObject = { [propName: string]: any };
-export const mapToObject = (list: Array<string>, mapFn: Function): MappedObject => {
-  const out: MappedObject = {};
-  for (const item of list) {
-    out[item] = mapFn(item);
-  }
-  return out;
-};
-
 export class APIError extends Error {
   constructor(response: object, ...params: Array<any>) {
     super(...params);

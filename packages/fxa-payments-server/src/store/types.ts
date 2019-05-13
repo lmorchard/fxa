@@ -62,14 +62,6 @@ export interface State {
   }
 }
 
-export interface Selector {
-  (state: State): any;
-}
-
-export interface Selectors {
-  [propName: string]: Selector;
-}
-
 export type Payload = any; 
 
 export interface Action {

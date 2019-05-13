@@ -13,17 +13,17 @@ import {
   fetchDefault,
   fetchReducer,
   setStatic,
-  mapToObject,
 } from './utils';
 
 import {
   State,
-  Selectors,
   ActionCreators,
-  Plan,
 } from './types';
 
-export const defaultState: State = {
+import * as selectors from './selectors';
+export { selectors };
+
+const defaultState: State = {
   api: {
     cancelSubscription: fetchDefault(false),
     createSubscription: fetchDefault(false),
@@ -31,40 +31,6 @@ export const defaultState: State = {
     profile: fetchDefault({}),
     subscriptions: fetchDefault([]),
     token: fetchDefault({}),  
-  }
-};
-
-export const selectors: Selectors = {
-  profile: state => state.api.profile,
-  token: state => state.api.token,
-  subscriptions: state => state.api.subscriptions,
-  plans: state => state.api.plans,
-  createSubscriptionStatus: state => state.api.createSubscription,
-  cancelSubscriptionStatus: state => state.api.cancelSubscription,
-
-  lastError: state => Object
-    .entries(state.api)
-    .filter(([k, v]) => v && !! v.error)
-    .map(([k, v]) => [k, v.error])[0],
-
-  isLoading: state => Object
-    .values(state.api)
-    .some(v => v && !! v.loading),
-
-  products: state => {
-    const plans = selectors.plans(state).result || [];
-    return Array.from(
-      new Set(
-        plans.map((plan: Plan) => plan.product_id)
-      )
-    );
-  },
-
-  plansByProductId: state => (productId: string) => {
-    const plans = selectors.plans(state).result || [];
-    return productId
-      ? plans.filter((plan: Plan) => plan.product_id === productId)
-      : plans;
   }
 };
 
@@ -101,17 +67,17 @@ export const actions: ActionCreators = {
   createSubscriptionAndRefresh: (accessToken: string, params: object) =>
     async (dispatch: Function, getState: Function) => {
       await dispatch(actions.createSubscription(accessToken, params));
-      dispatch(actions.fetchSubscriptions(accessToken));
+      return dispatch(actions.fetchSubscriptions(accessToken));
     },
 
   cancelSubscriptionAndRefresh: (accessToken: string, subscriptionId:object) => 
     async (dispatch: Function, getState: Function) => {
       await dispatch(actions.cancelSubscription(accessToken, subscriptionId));
-      dispatch(actions.fetchSubscriptions(accessToken));
+      return dispatch(actions.fetchSubscriptions(accessToken));
     },
 };
 
-export const reducers = {
+const reducers = {
   api: typeToReducer(
     {
       [actions.fetchProfile.toString()]:
@@ -136,15 +102,6 @@ export const reducers = {
     defaultState.api
   ),
 };
-
-export const selectorsFromState = 
-  (...names: Array<string>) =>
-    (state: State) =>
-      mapToObject(names, (name: string) => selectors[name](state));
-
-export const pickActions =
-  (...names: Array<string>) =>
-    mapToObject(names, (name: string) => actions[name]);
 
 const composeEnhancers =
   // @ts-ignore declare this property __REDUX_DEVTOOLS_EXTENSION_COMPOSE__

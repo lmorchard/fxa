@@ -1,27 +1,26 @@
-import React, { useCallback, useEffect } from 'react';
-import { connect, useDispatch } from 'react-redux';
-import { selectorsFromState, actions } from '../store';
-import { SubscriptionsFetchState, Subscription as SubscriptionType } from '../store/types';
+import React, { useContext, useCallback, useEffect } from 'react';
+import { connect } from 'react-redux';
+import { actions, selectors } from '../store';
+import { State, SubscriptionsFetchState, Subscription as SubscriptionType } from '../store/types';
 import { useBooleanState, useCheckboxState } from '../lib/hooks';
 import LoadingSpinner from '../components/LoadingSpinner';
+import AppContext from '../lib/AppContext';
 
 type SubscriptionsProps = {
-  accessToken: string,
   isLoading: boolean,
   subscriptions: SubscriptionsFetchState,
   cancelSubscription: Function,
+  resetCancelSubscription: Function,
+  fetchSubscriptions: Function,
 };
 export const Subscriptions = ({
-  accessToken,
   isLoading,
   subscriptions,
   cancelSubscription,
+  resetCancelSubscription,
+  fetchSubscriptions
 }: SubscriptionsProps) => {
-  const dispatch = useDispatch();
-
-  const resetCancelSubscription = useCallback(() => {
-    dispatch(actions.resetCancelSubscription());
-  }, [ dispatch ]);
+  const { accessToken } = useContext(AppContext);
 
   // Reset subscription cancel status on initial render.
   useEffect(() => {
@@ -31,19 +30,16 @@ export const Subscriptions = ({
   // Fetch subscriptions on initial render or auth change.
   useEffect(() => {
     if (accessToken) {
-      dispatch(actions.fetchSubscriptions(accessToken));
+      fetchSubscriptions(accessToken);
     }
-  }, [ dispatch, accessToken ]);
+  }, [ accessToken, fetchSubscriptions ]);
 
   if (isLoading) {
     return <LoadingSpinner />;
   }
 
-  if (subscriptions.loading) {
-    return <div>(subscriptions loading...)</div>;
-  }
-
   if (subscriptions.error) {
+    // TODO: fixup as part of final UX & visuals for #718
     return <div>(subscriptions error! {'' + subscriptions.error})</div>;
   }
 
@@ -105,8 +101,13 @@ export const Subscription = ({
 };
 
 export default connect(
-  // TODO: replace this with a useSelector hook
-  selectorsFromState('subscriptions'),
-  // TODO: replace this with a useDispatch hook
-  { cancelSubscription: actions.cancelSubscriptionAndRefresh }
+  (state: State) => ({
+    isLoading: selectors.isLoading(state),
+    subscriptions: selectors.subscriptions(state),
+  }),
+  {
+    cancelSubscription: actions.cancelSubscriptionAndRefresh,
+    resetCancelSubscription: actions.resetCancelSubscription,
+    fetchSubscriptions: actions.fetchSubscriptions,
+  }
 )(Subscriptions);

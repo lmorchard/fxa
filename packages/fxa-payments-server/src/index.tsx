@@ -1,8 +1,11 @@
 import React from 'react';
 import { render } from 'react-dom';
+import { Provider as ReduxProvider } from 'react-redux';
 import { createAppStore, actions } from './store';
+import { StripeProvider } from 'react-stripe-elements';
 
 import config from './lib/config';
+import AppContext from './lib/AppContext';
 import './index.scss';
 import App from './App';
 
@@ -21,7 +24,13 @@ async function init() {
     ].map(store.dispatch);
   
     render(
-      <App {...{ accessToken, config, store }} />,
+      <StripeProvider apiKey={config.STRIPE_API_KEY}>
+        <ReduxProvider store={store}>
+          <AppContext.Provider value={{ accessToken, config }}>
+            <App />
+          </AppContext.Provider>
+        </ReduxProvider>
+      </StripeProvider>,
       document.getElementById('main-content')
     );  
   }

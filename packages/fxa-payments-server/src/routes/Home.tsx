@@ -1,31 +1,33 @@
-import React, { useEffect } from 'react';
-import { connect, useDispatch } from 'react-redux';
-import { actions, selectorsFromState } from '../store';
-import { PlansFetchState } from '../store/types';
+import React, { useContext, useEffect } from 'react';
+import { connect } from 'react-redux';
+import { actions, selectors } from '../store';
+import { State, PlansFetchState } from '../store/types';
 import { Link } from 'react-router-dom';
+
+import AppContext from '../lib/AppContext';
 
 import LoadingSpinner from '../components/LoadingSpinner';
 
 type IndexProps = {
-  accessToken: string,
   isLoading: boolean,
   plans: PlansFetchState,
-  products: Array<string>
+  products: Array<string>,
+  fetchPlans: Function,
 };
 
 export const Index = ({
-  accessToken,
   isLoading,
   plans,
   products,
+  fetchPlans,
 }: IndexProps) => {
-  const dispatch = useDispatch();
+  const { accessToken } = useContext(AppContext);
 
   useEffect(() => {
     if (accessToken) {
-      dispatch(actions.fetchPlans(accessToken));
+      fetchPlans(accessToken);
     }
-  }, [ dispatch, accessToken ]);
+  }, [ accessToken, fetchPlans ]);
 
   if (isLoading) {
     return <LoadingSpinner />;
@@ -48,7 +50,13 @@ export const Index = ({
   );
 };
 
-// TODO: replace this with a useSelector hook
 export default connect(
-  selectorsFromState('plans', 'products')
+  (state: State) => ({
+    isLoading: selectors.isLoading(state),
+    plans: selectors.plans(state),
+    products: selectors.products(state),
+  }),
+  {
+    fetchPlans: actions.fetchPlans
+  }
 )(Index);
