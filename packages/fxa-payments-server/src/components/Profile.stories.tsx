@@ -26,3 +26,4 @@ const mockProfile: ProfileType = {
 };
 
 init();
+

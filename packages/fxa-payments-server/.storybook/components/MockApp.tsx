@@ -7,21 +7,16 @@ type MockAppProps = {
   children: ReactNode
 };
 
-export const MockApp = ({ children }: MockAppProps) => <>
-  <div id="fox-logo"></div>
-  <div id="stage" style={{ opacity: 1 }}>
-    <div id="main-content" className="card visible">
-      <div className="app">
-        <StripeProvider apiKey={config.STRIPE_API_KEY}>
-          <MockLoader>
-            {children}
-          </MockLoader>
-        </StripeProvider>
-      </div>
-    </div>
-  </div>
-  <a id="about-mozilla" rel="author" target="_blank"
-    href="https://www.mozilla.org/about/?utm_source=firefox-accounts&amp;utm_medium=Referral"></a>
-</>;
+export const MockApp = ({ children }: MockAppProps) => 
+  <div style={{
+    width: '100vw',
+    height: '100vh',
+  }}>
+    <StripeProvider apiKey={config.STRIPE_API_KEY}>
+      <MockLoader>
+        {children}
+      </MockLoader>
+    </StripeProvider>
+  </div>;
 
 export default MockApp;

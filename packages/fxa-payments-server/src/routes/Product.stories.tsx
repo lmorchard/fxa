@@ -50,7 +50,7 @@ const mockProps: ProductProps = {
     loading: false,
     result: null,
   },
-  plansByProductId: (_) => PLANS,
+  plansByProductId: (_: string) => PLANS,
   createSubscription: action('createSubscription'),
   resetCreateSubscription: action('resetCreateSubscription'),
   fetchPlansAndSubscriptions: action('fetchPlansAndSubscriptions'),
