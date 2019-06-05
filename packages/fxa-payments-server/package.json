@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "Firefox Accounts Payments Service",
   "scripts": {
+    "postinstall": "scripts/postinstall.sh",
     "lint": "npm-run-all --parallel lint:*",
     "lint:eslint": "eslint .",
     "lint:sass": "sass-lint -v",
