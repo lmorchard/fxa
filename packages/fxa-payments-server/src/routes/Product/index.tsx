@@ -157,7 +157,7 @@ const ProfileBanner = ({
   }
 }: ProfileProps) => (
   <div className="profile-banner">
-    <img className="avatar" src={avatar} />
+    <img className="avatar hoisted" src={avatar} />
     {displayName && <h2 className="displayName">{displayName}</h2>}
     <h3 className="name email">{email}</h3>
     {/* TODO: what does "switch account" do? need to re-login and redirect eventually back here?

@@ -1,6 +1,7 @@
 import React from 'react';
 import { storiesOf } from '@storybook/react';
 import { action } from '@storybook/addon-actions';
+import { linkTo } from '@storybook/addon-links';
 import MockApp, { defaultAppContextValue } from '../../../.storybook/components/MockApp';
 import { QueryParams } from '../../lib/types';
 import { SignInLayout } from '../../components/AppLayout';
@@ -77,6 +78,15 @@ const PLANS = [
   }
 ];
 
+const createSubscription = action('createSubscription');
+const linkToSubscriptionSuccess = linkTo('routes/Product', 'subscription success');
+/*
+const onSubscriptionSuccess = () => {
+  createSubscription();
+  linkTo();
+}
+*/
+
 const MOCK_PROPS: ProductProps = {
   match: {
     params: {
@@ -105,7 +115,7 @@ const MOCK_PROPS: ProductProps = {
   },
   customerSubscriptions: [],
   plansByProductId: (_: string) => PLANS,
-  createSubscription: action('createSubscription'),
+  createSubscription: linkToSubscriptionSuccess, // action('createSubscription'),
   resetCreateSubscription: action('resetCreateSubscription'),
   fetchProductRouteResources: action('fetchProductRouteResources'),
 };
