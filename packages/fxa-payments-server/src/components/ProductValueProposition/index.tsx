@@ -1,31 +1,26 @@
 import React from 'react';
 import { Plan } from '../../store/types';
 
+export type DetailsProps = { plan: Plan };
+
 // Table of lazy-loaded product detail components
 type availableDetailsType = {
-  [propName: string]: any; // TODO: need a better type for what React.lazy() produces
+  [propName: string]: React.LazyExoticComponent<(props: DetailsProps) => JSX.Element>
 };
 const availableDetails: availableDetailsType = {
   '123doneProProduct': React.lazy(() => import('./Details123donePro')),
   '321doneProProduct': React.lazy(() => import('./Details321donePro')),
-  //'allDoneProProduct': React.lazy(() => import('./DetailsAlldonePro')),
 };
-
-const DefaultDetails = (plan: Plan) => <p>Lorem ipsum dolor amet</p>;
-
-type ProductValuePropositionProps = { plan: Plan };
+const defaultDetails = React.lazy(() => import('./DetailsDefault'));
 
 export const ProductValueProposition = ({
   plan
-}: ProductValuePropositionProps) => {
+}: DetailsProps) => {
   const Details = plan.product_id in availableDetails
     ? availableDetails[plan.product_id]
-    : DefaultDetails;
-
-  const { currency, amount, interval, plan_name } = plan;
+    : defaultDetails;
   return (
-    <div className="productDetails">
-      <p>For {currency} {amount} per {interval}, your {plan_name} includes:</p>
+    <div className="product-details">
       <Details plan={plan} />
     </div>
   );

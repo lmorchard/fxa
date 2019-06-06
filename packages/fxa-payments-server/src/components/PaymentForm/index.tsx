@@ -49,12 +49,12 @@ export const PaymentForm = ({
 
   return (
     <form onSubmit={onSubmit} className="payment">
-      <h2>Billing information</h2>
+      <h3><span>Billing information</span></h3>
 
       <div className="input-row">
         <label>
           <span className="label-text">Name as it appears on your card</span>
-          <input name="name" type="text" className="name tooltip-below" defaultValue="" spellCheck={false} required autofocus />
+          <input name="name" type="text" className="name tooltip-below" defaultValue="" spellCheck={false} required autoFocus />
           {/*
           <input name="name" type="text" className="name tooltip-below invalid" value="" spellCheck="false" required autofocus="autofocus" aria-invalid="true" aria-described-by="error-tooltip-1023" />
           <aside id="error-tooltip-1023" className="tooltip tooltip-below fade-up-tt">Valid email required</aside>
@@ -87,7 +87,7 @@ export const PaymentForm = ({
         <div className="input-row">
           <label>
             <span className="label-text">Zip Code</span>
-            <input name="zip" type="text" className="zip tooltip-below" value="" spellCheck={false} required autofocus />
+            <input name="zip" type="text" className="zip tooltip-below" defaultValue="" spellCheck={false} required autofocus />
           </label>
         </div>
       </div>
@@ -105,7 +105,7 @@ export const PaymentForm = ({
         <button id="submit-btn" type="submit" disabled={! confirmationChecked}>Submit</button>
       </div>
 
-      <div class="legal-blurb">
+      <div className="legal-blurb">
         Mozilla uses Stripe for secure payment processing.
         <br />
         View the <a href="https://stripe.com/privacy">Stripe privacy policy</a>.

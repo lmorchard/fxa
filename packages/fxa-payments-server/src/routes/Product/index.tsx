@@ -122,10 +122,11 @@ export const Product = ({
 
   return (
     <div>
+      <hr />
       <div>
-        <h2>Let&apos;s set up your subscription</h2>
         <ProductValueProposition plan={selectedPlan} />
       </div>
+      <hr />
       <PaymentForm {...{ onPayment }} />
     </div>
   );
