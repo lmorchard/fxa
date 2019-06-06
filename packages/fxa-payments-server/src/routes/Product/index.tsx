@@ -1,19 +1,26 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback, useContext } from 'react';
 import { connect } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { QueryParams } from '../../lib/types';
 import { actions, selectors } from '../../store';
+import { AppContext } from '../../lib/AppContext';
 
 import {
   State,
   Plan,
-  SubscriptionsFetchState,
+  Profile,
+  CustomerFetchState,
+  CustomerSubscription,
   PlansFetchState,
   CreateSubscriptionFetchState,
+  ProfileFetchState,
 } from '../../store/types';
 
-import ProductValueProposition from '../../components/ProductValueProposition';
+import './index.scss';
+
 import PaymentForm from '../../components/PaymentForm';
+import PlanDetails from './PlanDetails';
+import SubscriptionRedirect from './SubscriptionRedirect';
 
 export type ProductProps = {
   match: {
@@ -21,15 +28,15 @@ export type ProductProps = {
       productId: string,
     }
   },
-  accessToken: string,
-  queryParams: QueryParams,
+  profile: ProfileFetchState,
   plans: PlansFetchState,
+  customer: CustomerFetchState,
+  customerSubscriptions: Array<CustomerSubscription>,
   createSubscriptionStatus: CreateSubscriptionFetchState,
-  subscriptions: SubscriptionsFetchState,
   plansByProductId: (id: string) => Array<Plan>,
   createSubscription: Function,
   resetCreateSubscription: Function,
-  fetchPlansAndSubscriptions: Function,
+  fetchProductRouteResources: Function,
 };
 
 export const Product = ({
@@ -38,50 +45,65 @@ export const Product = ({
       productId
     }
   },
-  accessToken,
-  queryParams,
+  profile,
   plans,
+  customer,
+  customerSubscriptions,
   createSubscriptionStatus,
-  subscriptions,
   plansByProductId,
   createSubscription,
   resetCreateSubscription,
-  fetchPlansAndSubscriptions,
+  fetchProductRouteResources,
 }: ProductProps) => {
+  const {
+    accessToken,
+    queryParams,
+    navigateToUrl,
+  } = useContext(AppContext);
+
+  const {
+    plan: planId = '',
+    activated: accountActivated = false
+  } = queryParams;
+
+  // Fetch plans on initial render, change in product ID, or auth change.
+  useEffect(() => {
+    if (accessToken) {
+      fetchProductRouteResources(accessToken);
+    }
+  }, [ fetchProductRouteResources, accessToken ]);
+
   // Reset subscription creation status on initial render.
   useEffect(() => {
     resetCreateSubscription();
   }, [ resetCreateSubscription ]);
 
-  // Fetch plans on initial render, change in product ID, or auth change.
-  useEffect(() => {
-    if (accessToken) {
-      fetchPlansAndSubscriptions(accessToken);
+  // Figure out a selected plan for product, either from query param or first plan.
+  const productPlans = plansByProductId(productId);
+  let selectedPlan = productPlans.filter(plan => plan.plan_id === planId)[0];
+  if (!selectedPlan) {
+    selectedPlan = productPlans[0];
+  }
+
+  const onPayment = useCallback((tokenResponse: stripe.TokenResponse) => {
+    if (tokenResponse && tokenResponse.token) {
+      createSubscription(accessToken, {
+        paymentToken: tokenResponse.token.id,
+        // eslint-disable-next-line camelcase
+        planId: selectedPlan.plan_id,
+      });  
     }
-  }, [ fetchPlansAndSubscriptions, accessToken ]);
+  }, [ accessToken, selectedPlan ]);
+
+  const onPaymentError = useCallback((error: any) => {
+  }, [ accessToken, selectedPlan ]);
 
   if (plans.error) {
     return <div>(plans error! {'' + plans.error})</div>;
   }
 
-  if (subscriptions.error) {
-    return <div>(subscriptions error! {'' + subscriptions.error})</div>;
-  }
-
-  const planId = queryParams.plan;
-  const productPlans = plansByProductId(productId);
-  let selectedPlan = productPlans
-    .filter(plan => plan.plan_id === planId)[0];
-  if (!selectedPlan) {
-    selectedPlan = productPlans[0];
-  }
-
-  if (! selectedPlan) {
-    return <div>No plans available for this product.</div>;
-  }
-
-  if (createSubscriptionStatus.loading) {
-    return <div>Creating subscription...</div>;
+  if (customer.error) {
+    return <div>(customer error! {'' + customer.error})</div>;
   }
 
   if (createSubscriptionStatus.error) {
@@ -91,57 +113,92 @@ export const Product = ({
     </div>;
   }
 
-  if (createSubscriptionStatus.result) {
-    return <div>
-      <h2>TODO: Redirect to product goes here</h2>
-      <Link to="/subscriptions">Manage subscriptions</Link>
-    </div>;
+  if (createSubscriptionStatus.loading) {
+    return <div>Creating subscription...</div>;
   }
 
-  // TODO: Rename productName column to productId
-  // https://github.com/mozilla/fxa/issues/1187
-  const alreadyHasProduct = (subscriptions.result || [])
-    .some(subscription => subscription.productName === productId);
-  if (alreadyHasProduct) {
-    return <div>
-      <h2>TODO: Already have a subscription to the product. Redirect to product goes here?</h2>
-      <Link to="/subscriptions">Manage subscriptions</Link>
-    </div>;
+  if (! selectedPlan) {
+    return <div>No plans available for this product.</div>;
   }
 
-  const onPayment = (tokenResponse: stripe.TokenResponse) => {
-    console.log('RESULT', tokenResponse);
-    if (tokenResponse && tokenResponse.token) {
-      createSubscription(accessToken, {
-        paymentToken: tokenResponse.token.id,
-        // eslint-disable-next-line camelcase
-        planId: selectedPlan.plan_id,
-      });  
-    }
-  };
+  // If the customer has any subscription plan that matches a plan for the
+  // selected product, then they are already subscribed.
+  const customerIsSubscribed =
+    customerSubscriptions.some(customerSubscription =>
+      productPlans.some(plan =>
+        plan.plan_id === customerSubscription.plan_id));
 
   return (
-    <div>
-      <hr />
-      <div>
-        <ProductValueProposition plan={selectedPlan} />
-      </div>
-      <hr />
-      <PaymentForm {...{ onPayment }} />
+    <div className="product-payment">
+      {customerIsSubscribed ? <>
+        <SubscriptionRedirect {...{ plan: selectedPlan, navigateToUrl }} />
+      </> : <>
+        {profile.result && <>
+          {accountActivated
+            ? <AccountActivatedBanner profile={profile.result} />
+            : <ProfileBanner profile={profile.result} />}
+          <hr />
+        </>}
+        <PlanDetails plan={selectedPlan} />
+        <hr />
+        <PaymentForm {...{ onPayment, onPaymentError }} />
+      </>}
     </div>
   );
 };
 
+type ProfileProps = {
+  profile: Profile
+};
+
+const ProfileBanner = ({
+  profile: {
+    email,
+    avatar,
+    displayName,
+  }
+}: ProfileProps) => (
+  <div className="profile-banner">
+    <img className="avatar" src={avatar} />
+    {displayName && <h2 className="displayName">{displayName}</h2>}
+    <h3 className="name email">{email}</h3>
+    {/* TODO: what does "switch account" do? need to re-login and redirect eventually back here?
+      <a href="">Switch account</a>
+    */}
+  </div>
+);
+
+const AccountActivatedBanner = ({
+  profile: {
+    email,
+    displayName,
+  }
+}: ProfileProps) => (
+  <div className="account-activated">
+    <h2>
+      Your account is activated,
+      {" "}
+      {displayName ? <>
+        <span className="displayName">{displayName}</span>
+      </> : <>
+        <span className="email">{email}</span>
+      </>}
+    </h2>
+  </div>
+);
+
 export default connect(
   (state: State) => ({
+    customer: selectors.customer(state),
+    customerSubscriptions: selectors.customerSubscriptions(state),
+    profile: selectors.profile(state),
     plans: selectors.plans(state),
-    subscriptions: selectors.subscriptions(state),
     createSubscriptionStatus: selectors.createSubscriptionStatus(state),
     plansByProductId: selectors.plansByProductId(state),
   }),
   {
     createSubscription: actions.createSubscriptionAndRefresh,
     resetCreateSubscription: actions.resetCreateSubscription,
-    fetchPlansAndSubscriptions: actions.fetchPlansAndSubscriptions,
+    fetchProductRouteResources: actions.fetchProductRouteResources,
   }
 )(Product);

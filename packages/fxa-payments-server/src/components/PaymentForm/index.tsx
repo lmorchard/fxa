@@ -10,6 +10,7 @@ import {
 import { useCheckboxState } from '../../lib/hooks';
 
 import './index.scss';
+import { Profile } from '../../store/types';
 
 type PaymentFormProps = {
   onPayment: (tokenResponse: stripe.TokenResponse) => void,
@@ -36,7 +37,7 @@ export const PaymentForm = ({
         .then(onPayment)
         .catch(onPaymentError);
     }
-  }, [ onPayment, stripe ]);
+  }, [ onPayment, onPaymentError, stripe ]);
 
   // ref: https://stripe.com/docs/stripe-js/reference#the-elements-object
   const stripeElementStyles = {

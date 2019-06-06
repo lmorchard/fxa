@@ -1,7 +1,9 @@
 // global:
 import React, { useEffect, useMemo, ReactNode } from 'react';
+import { action } from '@storybook/addon-actions';
 import { StripeProvider, ReactStripeElements, Elements } from 'react-stripe-elements';
 import { MockLoader } from './MockLoader';
+import { AppContext, AppContextType } from '../../src/lib/AppContext';
 
 declare global {
   interface Window {
@@ -11,9 +13,17 @@ declare global {
 
 type MockAppProps = {
   children: ReactNode,
+  appContextValue?: AppContextType,
   stripeApiKey?: string,
   applyStubsToStripe?: (orig: stripe.Stripe) => stripe.Stripe,
 }
+
+export const defaultAppContextValue = {
+  accessToken: 'at_12345',
+  config: {},
+  queryParams: {},
+  navigateToUrl: action('navigateToUrl'),
+};
 
 export const defaultStripeStubs = (stripe: stripe.Stripe) => {
   stripe.createToken = (element: stripe.elements.Element | string) => {
@@ -30,16 +40,17 @@ export const defaultStripeStubs = (stripe: stripe.Stripe) => {
     });
   }
   return stripe;
-}
+};
 
 export const MockApp = ({
   children,
   stripeApiKey = '8675309',
   applyStubsToStripe = defaultStripeStubs,
+  appContextValue = defaultAppContextValue,
 }: MockAppProps) => {
   const mockStripe = useMemo<stripe.Stripe>(
     () => applyStubsToStripe(window.Stripe(stripeApiKey)),
-    [ stripeApiKey ]
+    [ stripeApiKey, applyStubsToStripe ]
   );
 
   // HACK: Set attributes on <html> dynamically because it's very hard to
@@ -53,9 +64,11 @@ export const MockApp = ({
 
   return (
     <StripeProvider stripe={mockStripe}>
-      <MockLoader>
-        {children}
-      </MockLoader>
+      <AppContext.Provider value={appContextValue}>
+        <MockLoader>
+          {children}
+        </MockLoader>
+      </AppContext.Provider>
     </StripeProvider>
   );
 };

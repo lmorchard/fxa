@@ -5,18 +5,58 @@ import MockApp from '../../../.storybook/components/MockApp';
 import { SignInLayout } from '../../components/AppLayout';
 import { Product, ProductProps } from './index';
 
+const RouteWrapper = (props: ProductProps) => (
+  <MockApp>
+    <SignInLayout>
+      <Product {...props } />
+    </SignInLayout>
+  </MockApp>
+);
+
 function init() {
   storiesOf('routes/Product', module)
-    .add('basic', () => (
-      <MockApp>
-        <SignInLayout>
-          <Product {...mockProps} />
-        </SignInLayout>
-      </MockApp>
-    ));
+    .add('subscribing with existing account', () => (
+      <RouteWrapper {...{
+        ...MOCK_PROPS,
+      }} />
+    ))
+    .add('subscribing with new account', () => (
+      <RouteWrapper {...{
+        ...MOCK_PROPS,
+        queryParams: { activated: '1' }
+      }} />
+    ))
+    .add('subscription success', () => (
+      <RouteWrapper {...{
+        ...MOCK_PROPS,
+        customerSubscriptions: [
+          {
+            current_period_end: '123',
+            current_period_start: '456',
+            ended_at: null,
+            nickname: 'Example Plan',
+            plan_id: 'plan_123',
+            status: 'active',
+            subscription_id: 'sk_78987',          
+          }
+        ]
+      }} />
+    ))
+    ;
 }
 
 const PRODUCT_ID = 'product_8675309';
+
+const PROFILE = {
+  amrValues: [],
+  avatar: 'http://placekitten.com/256/256',
+  avatarDefault: false,
+  displayName: 'Foo Barson',
+  email: 'foo@example.com',
+  locale: 'en-US',
+  twoFactorAuthentication: true,
+  uid: '8675309asdf',
+};
 
 const PLANS = [
   {
@@ -30,7 +70,7 @@ const PLANS = [
   }
 ];
 
-const mockProps: ProductProps = {
+const MOCK_PROPS: ProductProps = {
   match: {
     params: {
       productId: PRODUCT_ID
@@ -38,6 +78,11 @@ const mockProps: ProductProps = {
   },
   accessToken: 'mock_token',
   queryParams: {},
+  profile: {
+    error: null,
+    loading: false,
+    result: PROFILE,
+  },
   plans: {
     error: null,
     loading: false,
@@ -48,15 +93,17 @@ const mockProps: ProductProps = {
     loading: false,
     result: null,
   },
-  subscriptions: {
+  customer: {
     error: null,
     loading: false,
     result: null,
   },
+  customerSubscriptions: [],
   plansByProductId: (_: string) => PLANS,
   createSubscription: action('createSubscription'),
   resetCreateSubscription: action('resetCreateSubscription'),
-  fetchPlansAndSubscriptions: action('fetchPlansAndSubscriptions'),
+  fetchProductRouteResources: action('fetchProductRouteResources'),
+  navigateToUrl: action('navigateToUrl'),
 };
 
 init();

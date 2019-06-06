@@ -1,0 +1,52 @@
+.product-payment {
+  .account-activated {
+    margin-bottom: 25px;
+
+    h2 {
+      font-size: 24px;
+      font-weight: 500;
+      color: #20123b;
+    }
+  }
+
+  .profile-banner {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    align-items: center;
+    margin-bottom : 25px;
+
+    img.avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 40px;
+      display: block;
+    }
+
+    h2.displayName {
+      margin: 0;
+    }
+
+    h3.email {
+      margin: 0;
+      padding: 0;
+      line-height: 14px;
+    }
+  }
+
+  .subscription-ready {
+    h2 {
+      font-size: 24px;    
+      font-weight: 500;
+      color: #20123b;      
+    }
+    p {
+      margin: 20px 100px;
+      font-size: 16px;
+      color: #0c0c0d;      
+    }
+    a {
+      font-size: 16px;
+    }
+  }
+}
