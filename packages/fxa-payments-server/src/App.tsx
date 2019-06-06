@@ -33,22 +33,27 @@ export const App = ({
   store,
   queryParams
 }: AppProps) => {
-  // Note: every Route below should also be listed in INDEX_ROUTES in server/lib/server.js
+  const commonProps = {
+    accessToken,
+    config,
+    queryParams,
+  };
   return (
     <StripeProvider apiKey={config.STRIPE_API_KEY}>
       <Provider store={store}>
         <LoadingOverlay />
         <Router>
           <React.Suspense fallback={<RouteFallback />}>
+            {/* Note: every Route below should also be listed in INDEX_ROUTES in server/lib/server.js */}
             <Route path="/" exact render={() => ( <Redirect to="/subscriptions" /> )} />
             <Route path="/subscriptions" exact render={props => (
               <SettingsLayout>
-                <Subscriptions {...{ accessToken, config, queryParams, ...props }} />
+                <Subscriptions {...{ ...commonProps, ...props }} />
               </SettingsLayout>
             )} />
             <Route path="/products/:productId" render={props => (
               <SignInLayout>
-                <Product {...{ accessToken, config, queryParams, ...props }} />
+                <Product {...{ ...commonProps, ...props }} />
               </SignInLayout>
             )} />
           </React.Suspense>

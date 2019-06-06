@@ -1,9 +1,9 @@
 import React from 'react';
 import { storiesOf } from '@storybook/react';
 import { action } from '@storybook/addon-actions';
-import MockApp from '../../.storybook/components/MockApp';
-import { SignInLayout } from '../components/AppLayout';
-import { Product, ProductProps } from './Product';
+import MockApp from '../../../.storybook/components/MockApp';
+import { SignInLayout } from '../../components/AppLayout';
+import { Product, ProductProps } from './index';
 
 function init() {
   storiesOf('routes/Product', module)

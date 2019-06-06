@@ -11,7 +11,7 @@ const availableDetails: availableDetailsType = {
   //'allDoneProProduct': React.lazy(() => import('./DetailsAlldonePro')),
 };
 
-const DefaultDetails = (plan: Plan) => <pre>{JSON.stringify(plan, null, ' ')}</pre>;
+const DefaultDetails = (plan: Plan) => <p>Lorem ipsum dolor amet</p>;
 
 type ProductValuePropositionProps = { plan: Plan };
 

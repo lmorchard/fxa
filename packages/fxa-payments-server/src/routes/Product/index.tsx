@@ -1,9 +1,8 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect } from 'react';
 import { connect } from 'react-redux';
-import { injectStripe, CardElement, Elements, ReactStripeElements } from 'react-stripe-elements';
 import { Link } from 'react-router-dom';
-import { QueryParams } from '../lib/types';
-import { actions, selectors } from '../store';
+import { QueryParams } from '../../lib/types';
+import { actions, selectors } from '../../store';
 
 import {
   State,
@@ -11,10 +10,10 @@ import {
   SubscriptionsFetchState,
   PlansFetchState,
   CreateSubscriptionFetchState,
-} from '../store/types';
+} from '../../store/types';
 
-import ProductValueProposition from '../components/ProductValueProposition';
-import { useCheckboxState } from '../lib/hooks';
+import ProductValueProposition from '../../components/ProductValueProposition';
+import PaymentForm from '../../components/PaymentForm';
 
 export type ProductProps = {
   match: {
@@ -110,83 +109,27 @@ export const Product = ({
     </div>;
   }
 
+  const onPayment = (tokenResponse: stripe.TokenResponse) => {
+    console.log('RESULT', tokenResponse);
+    if (tokenResponse && tokenResponse.token) {
+      createSubscription(accessToken, {
+        paymentToken: tokenResponse.token.id,
+        // eslint-disable-next-line camelcase
+        planId: selectedPlan.plan_id,
+      });  
+    }
+  };
+
   return (
     <div>
       <div>
         <h2>Let&apos;s set up your subscription</h2>
         <ProductValueProposition plan={selectedPlan} />
       </div>
-      <Elements>
-        <SubscriptionForm {...{
-          accessToken,
-          createSubscription,
-          selectedPlan,
-        }} />
-      </Elements>
+      <PaymentForm {...{ onPayment }} />
     </div>
   );
 };
-
-type SubscriptionFormProps = {
-  accessToken: string,
-  selectedPlan: Plan,
-  createSubscription: Function,
-};
-export const SubscriptionFormRaw = ({
-  accessToken,
-  selectedPlan,
-  createSubscription,
-  stripe,
-}: SubscriptionFormProps & ReactStripeElements.InjectedStripeProps) => {
-  const [ confirmationChecked, onConfirmationChanged ] = useCheckboxState();
-
-  const onSubmit = useCallback(ev => {
-    ev.preventDefault();
-
-    // TODO: use react state on form fields along with validation
-    const data = new FormData(ev.target);
-    const name = String(data.get('name'));
-
-    if (stripe) {
-      stripe
-        .createToken({ name })
-        .then((result) => {
-          console.log('RESULT', result);
-
-          createSubscription(accessToken, {
-            paymentToken: result && result.token && result.token.id,
-            // eslint-disable-next-line camelcase
-            planId: selectedPlan.plan_id,
-          });
-        });
-    }
-  }, [ accessToken, selectedPlan, createSubscription, stripe ]);
-
-  return (
-    <form onSubmit={onSubmit}>
-      <h2>Payment information</h2>
-      <ul>
-        <li>
-          <input name="name" placeholder="Name" />
-        </li>
-        <li>
-          <p>Card details (e.g. 4242 4242 4242 4242)</p>
-          <CardElement style={{base: {fontSize: '18px'}}} />
-        </li>
-        <li>
-          <label>
-            <input type="checkbox" defaultChecked={confirmationChecked} onChange={onConfirmationChanged} />
-            {' '}I authorize Mozilla to charge this payment method
-          </label>
-        </li>
-        <li>
-          <button disabled={! confirmationChecked}>Submit</button>
-        </li>
-      </ul>
-    </form>
-  );
-};
-export const SubscriptionForm = injectStripe(SubscriptionFormRaw);
 
 export default connect(
   (state: State) => ({

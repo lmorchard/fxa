@@ -5,3 +5,114 @@
 #root {
   display: contents;
 }
+
+#main-content.payments-card {
+  width: 640px;
+
+  .input-row {
+    text-align: left;
+  }
+}
+
+.input-row-group {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+
+  .input-row {
+    padding-right: 18px;
+    flex: 1 0;
+    width: inherit;
+
+    &.input-row--xl {
+      flex: 2 0;
+    }
+  }
+
+  .input-row:last-of-type {
+    padding-right: 0;
+  }  
+}
+
+.input-row .label-text {
+  display: block;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 500;
+  color: #686869;  
+  margin-bottom: 7px;
+}
+
+.input-row .label-text.disclaimer {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: normal;
+  color: #0c0c0d;
+}
+
+.input-row label.checkbox {
+  display: flex;
+  flex-direction: row;
+
+  input[type=checkbox] {
+    width: 32px;
+  }
+
+  .label-text {
+    display: block;
+    margin-left: 2px;
+  }
+}
+
+.input-row .tooltip {
+  top: inherit;
+  bottom: -32px;
+}
+
+.input-row {
+
+  input[type="checkbox"]:focus,
+  input[type="checkbox"]:not(:checked):focus,
+  input[type="checkbox"]:checked:focus {
+    border: 1px solid transparent;
+  }
+
+  .StripeElement {
+    @include input-element();
+
+    html[dir='ltr'] & {
+      padding: 0 0 0 $input-left-right-padding;
+    }
+
+    html[dir='rtl'] & {
+      direction: ltr;
+      padding: 0  $input-left-right-padding 0 0;
+      text-align: right;
+    }
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+
+  // stripe element class names
+  // https://stripe.com/docs/stripe-js/reference#the-element-container
+
+  .StripeElement--focus {
+    border-color: $input-border-color-focus;
+    box-shadow: 0 0 0 3px rgba($blue-50, 0.3);
+  }
+  
+  .StripeElement--invalid {
+    border-color: $error-background-color;
+
+    &.StripeElement--focus {
+      box-shadow: 0 0 0 3px rgba($error-background-color, 0.3);
+    }
+  }
+
+  @include respond-to('small') {
+    height: $input-height-small;
+  }
+}
