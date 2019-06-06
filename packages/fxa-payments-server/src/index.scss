@@ -7,87 +7,87 @@
 }
 
 #main-content.payments-card {
-  width: 640px;
   min-height: 200px;
+  width: 640px;
 
   hr {
     border: 0;
-    height: 0;
     border-top: 1px solid #e0e0e6;
+    height: 0;
     margin: 0 -40px;
   }
 
   .input-row {
     text-align: left;
-  
+
     @include respond-to('small') {
       height: $input-height-small;
     }
-  
+
     // Stripe element class names
     // https://stripe.com/docs/stripe-js/reference#the-element-container
-  
+
     .StripeElement {
       @include input-element();
-  
+
       html[dir='ltr'] & {
         padding: 0 0 0 $input-left-right-padding;
       }
-  
+
       html[dir='rtl'] & {
         direction: ltr;
         padding: 0  $input-left-right-padding 0 0;
         text-align: right;
       }
-  
+
       &:last-child {
         margin-bottom: 0;
       }
     }
-  
+
     .StripeElement--focus {
       border-color: $input-border-color-focus;
       box-shadow: 0 0 0 3px rgba($blue-50, 0.3);
     }
-    
+
     .StripeElement--invalid {
       border-color: $error-background-color;
-  
+
       &.StripeElement--focus {
         box-shadow: 0 0 0 3px rgba($error-background-color, 0.3);
       }
     }
-      
+
     .tooltip {
-      top: inherit;
       bottom: -32px;
+      top: inherit;
     }
 
     .label-text {
+      color: #686869;
       display: block;
-      text-align: left;
       font-size: 13px;
       font-weight: 500;
-      color: #686869;  
       margin-bottom: 7px;
+      text-align: left;
     }
-  
+
     .label-text.disclaimer {
+      color: #0c0c0d;
       font-size: 14px;
       font-weight: 500;
-      line-height: 1.5;
       letter-spacing: normal;
-      color: #0c0c0d;
+      line-height: 1.5;
     }
-  
+
     label.checkbox {
       display: flex;
       flex-direction: row;
-    
-      input[type=checkbox] {
+
+      input[type='checkbox'] {
         width: 32px;
       }
-    
+
       .label-text {
         display: block;
         margin-left: 2px;
@@ -95,30 +95,30 @@
     }
 
     // HACK: stop the checkbox from changing width on focus
-    input[type="checkbox"]:focus,
-    input[type="checkbox"]:not(:checked):focus,
-    input[type="checkbox"]:checked:focus {
+    input[type='checkbox']:focus,
+    input[type='checkbox']:not(:checked):focus,
+    input[type='checkbox']:checked:focus {
       border: 1px solid transparent;
     }
   }
 
   .input-row-group {
+    align-items: flex-end;
     display: flex;
     flex-direction: row;
-    align-items: flex-end;
-  
+
     .input-row {
-      padding-right: 18px;
       flex: 1 0;
+      padding-right: 18px;
       width: inherit;
-  
+
       &.input-row--xl {
         flex: 2 0;
       }
     }
-  
+
     .input-row:last-of-type {
       padding-right: 0;
-    }  
+    }
   }
 }

@@ -1,7 +1,5 @@
 import React, { useEffect, useCallback, useContext } from 'react';
 import { connect } from 'react-redux';
-import { Link } from 'react-router-dom';
-import { QueryParams } from '../../lib/types';
 import { actions, selectors } from '../../store';
 import { AppContext } from '../../lib/AppContext';
 

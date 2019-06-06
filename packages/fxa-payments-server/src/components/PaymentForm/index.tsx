@@ -10,7 +10,6 @@ import {
 import { useCheckboxState } from '../../lib/hooks';
 
 import './index.scss';
-import { Profile } from '../../store/types';
 
 type PaymentFormProps = {
   onPayment: (tokenResponse: stripe.TokenResponse) => void,

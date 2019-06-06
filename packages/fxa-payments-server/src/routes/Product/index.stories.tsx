@@ -2,6 +2,7 @@ import React from 'react';
 import { storiesOf } from '@storybook/react';
 import { action } from '@storybook/addon-actions';
 import MockApp from '../../../.storybook/components/MockApp';
+import { AppContext } from '../../lib/AppContext';
 import { SignInLayout } from '../../components/AppLayout';
 import { Product, ProductProps } from './index';
 
