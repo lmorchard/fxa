@@ -1,34 +1,21 @@
 import React from 'react';
 import { storiesOf } from '@storybook/react';
 import { action } from '@storybook/addon-actions';
-import MockApp from '../../../.storybook/components/MockApp';
-import { AppContext } from '../../lib/AppContext';
+import MockApp, { defaultAppContextValue } from '../../../.storybook/components/MockApp';
+import { QueryParams } from '../../lib/types';
 import { SignInLayout } from '../../components/AppLayout';
 import { Product, ProductProps } from './index';
-
-const RouteWrapper = (props: ProductProps) => (
-  <MockApp>
-    <SignInLayout>
-      <Product {...props } />
-    </SignInLayout>
-  </MockApp>
-);
 
 function init() {
   storiesOf('routes/Product', module)
     .add('subscribing with existing account', () => (
-      <RouteWrapper {...{
-        ...MOCK_PROPS,
-      }} />
+      <ProductRoute />
     ))
     .add('subscribing with new account', () => (
-      <RouteWrapper {...{
-        ...MOCK_PROPS,
-        queryParams: { activated: '1' }
-      }} />
+      <ProductRoute queryParams={{ activated: '1' }} />
     ))
     .add('subscription success', () => (
-      <RouteWrapper {...{
+      <ProductRoute routeProps={{
         ...MOCK_PROPS,
         customerSubscriptions: [
           {
@@ -45,6 +32,25 @@ function init() {
     ))
     ;
 }
+
+type ProductRouteProps = {
+  routeProps?: ProductProps,
+  queryParams?: QueryParams,
+}
+
+const ProductRoute = ({
+  routeProps = MOCK_PROPS,
+  queryParams = defaultAppContextValue.queryParams
+}: ProductRouteProps) => (
+  <MockApp appContextValue={{
+    ...defaultAppContextValue,
+    queryParams
+  }}>
+    <SignInLayout>
+      <Product {...routeProps } />
+    </SignInLayout>
+  </MockApp>
+);
 
 const PRODUCT_ID = 'product_8675309';
 
@@ -77,8 +83,6 @@ const MOCK_PROPS: ProductProps = {
       productId: PRODUCT_ID
     }
   },
-  accessToken: 'mock_token',
-  queryParams: {},
   profile: {
     error: null,
     loading: false,
@@ -104,7 +108,6 @@ const MOCK_PROPS: ProductProps = {
   createSubscription: action('createSubscription'),
   resetCreateSubscription: action('resetCreateSubscription'),
   fetchProductRouteResources: action('fetchProductRouteResources'),
-  navigateToUrl: action('navigateToUrl'),
 };
 
 init();
