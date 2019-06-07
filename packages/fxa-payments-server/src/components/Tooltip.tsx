@@ -7,27 +7,25 @@
 
 import React, { useEffect, useRef } from 'react';
 import classNames from 'classnames';
+import ScreenInfo from '../lib/screen-info';
 
-const PADDING_BELOW_TOOLTIP_PX = 2;
-const PADDING_ABOVE_TOOLTIP_PX = 4;
+export const PADDING_BELOW_TOOLTIP_PX = 2;
+export const PADDING_ABOVE_TOOLTIP_PX = 4;
 
 // These values should be the same as
 // https://github.com/mozilla/fxa-content-server/blob/0eab619612897dcda43e8074dafdf55e8cbe11ee/app/styles/_breakpoints.scss#L6
-const MIN_HEIGHT_TO_SHOW_TOOLTIP_BELOW = 480;
-const MIN_WIDTH_TO_SHOW_TOOLTIP_BELOW = 520;
+export const MIN_HEIGHT_TO_SHOW_TOOLTIP_BELOW = 480;
+export const MIN_WIDTH_TO_SHOW_TOOLTIP_BELOW = 520;
 
 export type TooltipProps = {
-  children: React.ReactNode,
+  children: string | React.ReactNode,
   parentRef: React.RefObject<HTMLInputElement | HTMLDivElement>,
   id?: string,
   showBelow?: boolean,
   dismissible?: boolean,
   onDismiss?: (ev: React.MouseEvent) => void,
   extraClassNames?: string,
-  screenInfo?: {
-    clientHeight: number,
-    clientWidth: number,
-  }
+  screenInfo?: ScreenInfo,
 };
 
 export const Tooltip = ({
@@ -38,15 +36,15 @@ export const Tooltip = ({
   dismissible = false,
   onDismiss = () => {},
   extraClassNames = '',
-  screenInfo = {
-    clientHeight: 1000,
-    clientWidth: 1000,
-  },
+  screenInfo,
 }: TooltipProps) => {
+  const { clientHeight, clientWidth } =
+    screenInfo || { clientHeight: 1000, clientWidth: 1000 };
+
   const doShowBelow =
     showBelow &&
-    (screenInfo.clientHeight >= MIN_HEIGHT_TO_SHOW_TOOLTIP_BELOW) &&
-    (screenInfo.clientWidth >= MIN_WIDTH_TO_SHOW_TOOLTIP_BELOW);
+    (clientHeight >= MIN_HEIGHT_TO_SHOW_TOOLTIP_BELOW) &&
+    (clientWidth >= MIN_WIDTH_TO_SHOW_TOOLTIP_BELOW);
 
   const tooltipRef = useRef<HTMLElement>(null);
 
@@ -63,16 +61,17 @@ export const Tooltip = ({
 
   const asideClassNames = [
     'tooltip',
+    extraClassNames,
     doShowBelow
       ? 'tooltip-below fade-up-tt'
       : 'fade-down-tt',
-    extraClassNames,
   ]; 
 
   return (
     <aside ref={tooltipRef} id={id} className={classNames(...asideClassNames)}>
       {children}
-      {dismissible && <span onClick={onDismiss} className="dismiss" tabIndex={2}>&#10005;</span>}
+      {dismissible &&
+        <span data-testid="dismiss-button" onClick={onDismiss} className="dismiss" tabIndex={2}>&#10005;</span>}
     </aside>
   );
 };

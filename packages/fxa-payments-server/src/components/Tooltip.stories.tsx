@@ -1,6 +1,7 @@
 import React, { useRef, useState, useCallback } from 'react';
 import { storiesOf } from '@storybook/react';
 import MockApp from '../../.storybook/components/MockApp';
+import ScreenInfo from '../lib/screen-info';
 import { SignInLayout } from './AppLayout';
 import { Tooltip } from './Tooltip';
 
@@ -56,11 +57,14 @@ const Field = ({
   onDismiss = () => {},
   onFocus = () => {},
   showBelow = undefined,
-  clientHeight = 1000,
+  clientHeight = undefined,
   extraClassNames = 'tooltip-error',
 }: FieldProps) => {
+  const screenInfo = new ScreenInfo(window);
+  if (typeof clientHeight !== 'undefined') {
+    screenInfo.clientHeight = clientHeight;
+  }
   const parentRef = useRef(null);
-  const screenInfo = { clientHeight, clientWidth: 1000 };
   return (
     <div className="input-row">
       <label>
