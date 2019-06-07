@@ -6,24 +6,20 @@
   display: contents;
 }
 
-#main-content.payments-card {
-  min-height: 200px;
-  width: 640px;
-
+#main-content {
   hr {
     border: 0;
     border-top: 1px solid #e0e0e6;
     height: 0;
     margin: 0 -40px;
   }
+}
+
+#main-content.payments-card {
+  min-height: 200px;
+  width: 640px;
 
   .input-row {
-    text-align: left;
-
-    @include respond-to('small') {
-      height: $input-height-small;
-    }
-
     // Stripe element class names
     // https://stripe.com/docs/stripe-js/reference#the-element-container
 

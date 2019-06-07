@@ -1,3 +1,7 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
 // This is a React version of this Bootstrap view:
 // https://github.com/mozilla/fxa/blob/master/packages/fxa-content-server/app/scripts/views/tooltip.js
 
@@ -12,13 +16,13 @@ const PADDING_ABOVE_TOOLTIP_PX = 4;
 const MIN_HEIGHT_TO_SHOW_TOOLTIP_BELOW = 480;
 const MIN_WIDTH_TO_SHOW_TOOLTIP_BELOW = 520;
 
-export type FieldTooltipProps = {
+export type TooltipProps = {
   children: React.ReactNode,
   parentRef: React.RefObject<HTMLInputElement | HTMLDivElement>,
   id?: string,
   showBelow?: boolean,
-  dismissable?: boolean,
-  onDismiss?: () => void,
+  dismissible?: boolean,
+  onDismiss?: (ev: React.MouseEvent) => void,
   extraClassNames?: string,
   screenInfo?: {
     clientHeight: number,
@@ -26,19 +30,19 @@ export type FieldTooltipProps = {
   }
 };
 
-export const FieldTooltip = ({
+export const Tooltip = ({
   children,
   parentRef,
   id = '',
   showBelow = true,
-  dismissable = false,
+  dismissible = false,
   onDismiss = () => {},
   extraClassNames = '',
   screenInfo = {
-    clientHeight: 600,
-    clientWidth: 600,
+    clientHeight: 1000,
+    clientWidth: 1000,
   },
-}: FieldTooltipProps) => {
+}: TooltipProps) => {
   const doShowBelow =
     showBelow &&
     (screenInfo.clientHeight >= MIN_HEIGHT_TO_SHOW_TOOLTIP_BELOW) &&
@@ -51,11 +55,9 @@ export const FieldTooltip = ({
     const tooltipEl = tooltipRef.current;
     const parentEl = parentRef.current;
     if (tooltipEl && parentEl) {
-      if (doShowBelow) {
-        tooltipEl.style.top = parentEl.offsetTop + parentEl.offsetHeight + PADDING_ABOVE_TOOLTIP_PX + 'px';
-      } else {
-        tooltipEl.style.top = parentEl.offsetTop + (0 - tooltipEl.offsetHeight - PADDING_BELOW_TOOLTIP_PX) + 'px';
-      }
+      tooltipEl.style.top = doShowBelow
+        ? parentEl.offsetTop + parentEl.offsetHeight + PADDING_ABOVE_TOOLTIP_PX + 'px'
+        : parentEl.offsetTop + (0 - tooltipEl.offsetHeight - PADDING_BELOW_TOOLTIP_PX) + 'px';
     }
   }, [ doShowBelow, tooltipRef, parentRef ]);
 
@@ -70,11 +72,9 @@ export const FieldTooltip = ({
   return (
     <aside ref={tooltipRef} id={id} className={classNames(...asideClassNames)}>
       {children}
-      {dismissable && <>
-        {" "}<span onClick={onDismiss} className="dismiss" tabIndex={2}>&#10005;</span>
-      </>}
+      {dismissible && <span onClick={onDismiss} className="dismiss" tabIndex={2}>&#10005;</span>}
     </aside>
   );
 };
 
-export default FieldTooltip;
+export default Tooltip;
