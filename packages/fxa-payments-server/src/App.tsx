@@ -9,6 +9,7 @@ import {
 } from 'react-router-dom';
 
 import { Config, QueryParams } from './lib/types';
+import { AppContext } from './lib/AppContext';
 
 import './App.scss';
 import { SignInLayout, SettingsLayout } from './components/AppLayout';
@@ -24,35 +25,45 @@ type AppProps = {
   accessToken: string,
   config: Config,
   store: Store,
-  queryParams: QueryParams
+  queryParams: QueryParams,
+  navigateToUrl: (url: string) => void,
 };
 
 export const App = ({
   accessToken,
   config,
   store,
-  queryParams
+  queryParams,
+  navigateToUrl,
 }: AppProps) => {
-  // Note: every Route below should also be listed in INDEX_ROUTES in server/lib/server.js
+  const appContextValue = {
+    accessToken,
+    config,
+    queryParams,
+    navigateToUrl,
+  };
   return (
     <StripeProvider apiKey={config.STRIPE_API_KEY}>
       <Provider store={store}>
-        <LoadingOverlay />
-        <Router>
-          <React.Suspense fallback={<RouteFallback />}>
-            <Route path="/" exact render={() => ( <Redirect to="/subscriptions" /> )} />
-            <Route path="/subscriptions" exact render={props => (
-              <SettingsLayout>
-                <Subscriptions {...{ accessToken, config, queryParams, ...props }} />
-              </SettingsLayout>
-            )} />
-            <Route path="/products/:productId" render={props => (
-              <SignInLayout>
-                <Product {...{ accessToken, config, queryParams, ...props }} />
-              </SignInLayout>
-            )} />
-          </React.Suspense>
-        </Router>
+        <AppContext.Provider value={appContextValue}>
+          <LoadingOverlay />
+          <Router>
+            <React.Suspense fallback={<RouteFallback />}>
+              {/* Note: every Route below should also be listed in INDEX_ROUTES in server/lib/server.js */}
+              <Route path="/" exact render={() => ( <Redirect to="/subscriptions" /> )} />
+              <Route path="/subscriptions" exact render={props => (
+                <SettingsLayout>
+                  <Subscriptions {...props} />
+                </SettingsLayout>
+              )} />
+              <Route path="/products/:productId" render={props => (
+                <SignInLayout>
+                  <Product {...props } />
+                </SignInLayout>
+              )} />
+            </React.Suspense>
+          </Router>
+        </AppContext.Provider>
       </Provider>
     </StripeProvider>
   );
