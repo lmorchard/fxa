@@ -1,4 +1,5 @@
 import React, { useCallback } from 'react';
+import classNames from 'classnames';
 import {
   injectStripe,
   CardNumberElement,
@@ -7,11 +8,42 @@ import {
   Elements,
   ReactStripeElements
 } from 'react-stripe-elements';
-import { useCheckboxState } from '../../lib/hooks';
+import { Form, Field, FieldGroup } from './fields';
+import { useFormValidator, ValidatorStateType } from './validator';
 
 import './index.scss';
 
-type PaymentFormProps = {
+// ref: https://stripe.com/docs/stripe-js/reference#the-elements-object
+const STRIPE_ELEMENT_STYLES = {
+  base: {
+    //TODO: Figure out what this really should be - I just copied it from computed styles because CSS can't apply through the iframe
+    fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif',
+    fontSize: '16px',
+    lineHeight: '48px',
+  }
+};
+
+function validate(state: ValidatorStateType) {
+  const { fields } = state;
+  
+  if (typeof fields.name.value !== 'undefined') {
+    if (fields.confirm.value === true) {
+      fields.confirm.valid = true;
+    }
+    if (fields.zip.value) {
+      fields.zip.valid = true;
+    }
+    if (! fields.name.value) {
+      fields.name.error = 'Please enter your name';
+    } else {
+      fields.name = { ...fields.name, error: null, valid: true };
+    }
+  }
+
+  return state;
+}
+
+export type PaymentFormProps = {
   onPayment: (tokenResponse: stripe.TokenResponse) => void,
   onPaymentError: (error: any) => void,
 } & ReactStripeElements.InjectedStripeProps;
@@ -21,7 +53,7 @@ export const PaymentForm = ({
   onPaymentError,
   stripe,
 }: PaymentFormProps) => {
-  const [ confirmationChecked, onConfirmationChanged ] = useCheckboxState();
+  const validator = useFormValidator(validate);
 
   const onSubmit = useCallback(ev => {
     ev.preventDefault();
@@ -38,79 +70,80 @@ export const PaymentForm = ({
     }
   }, [ onPayment, onPaymentError, stripe ]);
 
-  // ref: https://stripe.com/docs/stripe-js/reference#the-elements-object
-  const stripeElementStyles = {
-    base: {
-      lineHeight: '48px',
-      fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif',
-      fontSize: '16px',
-    }
-  };
-
   return (
-    <form onSubmit={onSubmit} className="payment">
+    <Form validator={validator} onSubmit={onSubmit} className="payment">
       <h3><span>Billing information</span></h3>
 
-      <div className="input-row">
-        <label>
-          <span className="label-text">Name as it appears on your card</span>
-          <input name="name" type="text" className="name tooltip-below" defaultValue="" spellCheck={false} required autoFocus />
-          {/*
-          <input name="name" type="text" className="name tooltip-below invalid" value="" spellCheck="false" required autofocus="autofocus" aria-invalid="true" aria-described-by="error-tooltip-1023" />
-          <aside id="error-tooltip-1023" className="tooltip tooltip-below fade-up-tt">Valid email required</aside>
-          */}
-        </label>
-      </div>
+      <Field name="name" label="Name as it appears on your card" required>
+        {({ ref, invalid, value, onInputChange }) => (
+          <input
+            ref={ref} type="text"
+            className={classNames({ invalid: invalid() })}
+            value={value('')} spellCheck={false} required autoFocus 
+            onChange={onInputChange}
+            onBlur={onInputChange} />
+        )}
+      </Field>
 
-      <div className="input-row-group">
-        <div className="input-row input-row--xl">
-          <label>
-            <span className="label-text">Credit Card Number</span>
-            <CardNumberElement style={stripeElementStyles} />
-          </label>
-        </div>
+      <FieldGroup>
 
-        <div className="input-row">
-          <label>
-            <span className="label-text">Exp. Date</span>
-            <CardExpiryElement style={stripeElementStyles} />
-          </label>
-        </div>
+        <Field name="creditCardNumber" label="Credit Card Number" className="input-row input-row--xl" required>
+          {({ ref, onStripeChange }) => (
+            <CardNumberElement
+              ref={ref}
+              style={STRIPE_ELEMENT_STYLES}
+              onChange={onStripeChange} />
+          )}
+        </Field>
 
-        <div className="input-row">
-          <label>
-            <span className="label-text">CVC</span>
-            <CardCVCElement style={stripeElementStyles} />
-          </label>
-        </div>
+        <Field name="expDate" label="Exp. Date" required>
+          {({ ref, onStripeChange }) => (
+            <CardExpiryElement
+              ref={ref}
+              style={STRIPE_ELEMENT_STYLES}
+              onChange={onStripeChange} />
+          )}
+        </Field>
 
-        <div className="input-row">
-          <label>
-            <span className="label-text">Zip Code</span>
-            <input name="zip" type="text" className="zip tooltip-below" defaultValue="" spellCheck={false} required autofocus />
-          </label>
-        </div>
-      </div>
-      
-      <div className="input-row">
-        <label className="checkbox">
-          <input type="checkbox" defaultChecked={confirmationChecked} onChange={onConfirmationChanged} />
+        <Field name="cvc" label="CVC" required>
+          {({ ref, onStripeChange }) => (
+            <CardCVCElement
+              ref={ref}
+              style={STRIPE_ELEMENT_STYLES}
+              onChange={onStripeChange} />
+          )}
+        </Field>
+
+        <Field name="zip" label="Zip Code" required>
+          {({ ref, invalid, value, onInputChange }) => (
+            <input
+              ref={ref} name="zip" type="number" maxLength={5}
+              className={classNames({ invalid: invalid() })}
+              value={value('')} spellCheck={false} required
+              onChange={onInputChange} />
+          )}
+        </Field>
+
+      </FieldGroup>
+     
+      <Field name="confirm" className="input-row input-row--checkbox" required tooltip={false}>
+        {({ onCheckboxChange }) => <>
+          <input type="checkbox" onChange={onCheckboxChange} />
           <span className="label-text disclaimer">
-            I authorize Mozilla, maker of Firefox products, to charge my payment method [cost] per [time frame], according to payment terms, until I cancel my subscription.
+            I authorize Mozilla, maker of Firefox products, to charge my
+            payment method [cost] per [time frame], according to payment
+            terms, until I cancel my subscription.
           </span>
-        </label>
-      </div>
-      
-      <div className="button-row">
-        <button id="submit-btn" type="submit" disabled={! confirmationChecked}>Submit</button>
-      </div>
+        </>}
+      </Field>
 
-      <div className="legal-blurb">
-        Mozilla uses Stripe for secure payment processing.
-        <br />
-        View the <a href="https://stripe.com/privacy">Stripe privacy policy</a>.
-      </div>
-    </form>
+      <Field name="submit" className="button-row" tooltip={false}>
+        {({ allValid }) => (
+          <button id="submit-btn" type="submit" disabled={! allValid()}>Submit</button>
+        )}
+      </Field>
+
+    </Form>
   );
 };
 

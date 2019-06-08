@@ -140,6 +140,12 @@ export const Product = ({
         <PlanDetails plan={selectedPlan} />
         <hr />
         <PaymentForm {...{ onPayment, onPaymentError }} />
+
+        <div className="legal-blurb">
+        Mozilla uses Stripe for secure payment processing.
+        <br />
+        View the <a href="https://stripe.com/privacy">Stripe privacy policy</a>.
+      </div>
       </>}
     </div>
   );

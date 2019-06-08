@@ -19,7 +19,7 @@ export const MIN_WIDTH_TO_SHOW_TOOLTIP_BELOW = 520;
 
 export type TooltipProps = {
   children: string | React.ReactNode,
-  parentRef: React.RefObject<HTMLInputElement | HTMLDivElement>,
+  parentRef: React.RefObject<any>,
   id?: string,
   showBelow?: boolean,
   dismissible?: boolean,
@@ -51,7 +51,9 @@ export const Tooltip = ({
   // After initial render, nudge tooltip position relative to parent element
   useEffect(() => {
     const tooltipEl = tooltipRef.current;
-    const parentEl = parentRef.current;
+    // HACK: A Stripe element yields a ref to the component, which hides its
+    // underlying DOM element in a _ref property
+    const parentEl = parentRef.current._ref || parentRef.current;
     if (tooltipEl && parentEl) {
       tooltipEl.style.top = doShowBelow
         ? parentEl.offsetTop + parentEl.offsetHeight + PADDING_ABOVE_TOOLTIP_PX + 'px'
