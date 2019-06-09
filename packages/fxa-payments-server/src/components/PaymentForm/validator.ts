@@ -8,6 +8,78 @@ export const useFormValidator = (): Validator => {
   );
 };
 
+export class Validator {
+  state: State;
+  dispatch: React.Dispatch<Action>;
+
+  constructor(state: State, dispatch: React.Dispatch<Action>) {
+    this.state = state;
+    this.dispatch = dispatch;
+  }
+
+  allValid() {
+    return Object
+      .values(this.state.fields)
+      .filter(field => field.required)
+      .every(field => field.valid === true);
+  }
+
+  initializeField(
+    { name, fieldType, required}:
+    { name: string, fieldType: FieldType, required: boolean}
+  ) {
+    this.dispatch({ type: 'initializeField', name, fieldType, required });
+  }
+
+  hasField(name: string) {
+    return name in this.state.fields;
+  }
+
+  getField(name: string) {
+    return this.state.fields[name];
+  }
+
+  setValue(name: string, value: any) {
+    this.dispatch({ type: 'setFieldValue', name, value });
+  }
+  
+  getValue(name: string, defVal: any) {
+    return (this.hasField(name) && this.getField(name).value) || defVal;
+  }
+
+  setValidity(name: string, valid: boolean) {
+    this.dispatch({ type: 'setFieldValidity', name, valid });
+  }
+
+  isInvalid(name: string) {
+    return this.hasField(name) && this.getField(name).valid === false;
+  }
+
+  setError(name: string, error: any) {
+    this.dispatch({ type: 'setFieldError', name, error });
+  }
+
+  hasError(name: string) {
+    return this.hasField(name) && !! this.getField(name).error;
+  }
+
+  getError(name: string) {
+    return this.hasField(name) && this.getField(name).error;
+  }
+
+  getGlobalError() {
+    return this.state.error;
+  }
+
+  setGlobalError(error: any) {
+    this.dispatch({ type: 'setGlobalError', error });
+  }
+
+  resetGlobalError(error: any) {
+    this.dispatch({ type: 'resetGlobalError' });
+  }
+}
+
 type State = {
   error: any,
   fields: { [name: string]: FieldState },
@@ -37,6 +109,7 @@ type Action =
   | { type: 'resetGlobalError' };
 
 type Reducer = (state: State) => State;
+
 type ActionReducer = (state: State, action: Action) => State;
 
 const mainReducer: ActionReducer = (state, action) => {
@@ -120,76 +193,4 @@ const stripeElementValidationReducer: Reducer = (state) => {
   }
 
   return state;
-}
-
-export class Validator {
-  state: State;
-  dispatch: React.Dispatch<Action>;
-
-  constructor(state: State, dispatch: React.Dispatch<Action>) {
-    this.state = state;
-    this.dispatch = dispatch;
-  }
-
-  allValid() {
-    return Object
-      .values(this.state.fields)
-      .filter(field => field.required)
-      .every(field => field.valid === true);
-  }
-
-  initializeField(
-    { name, fieldType, required}:
-    { name: string, fieldType: FieldType, required: boolean}
-  ) {
-    this.dispatch({ type: 'initializeField', name, fieldType, required });
-  }
-
-  hasField(name: string) {
-    return name in this.state.fields;
-  }
-
-  getField(name: string) {
-    return this.state.fields[name];
-  }
-
-  setValue(name: string, value: any) {
-    this.dispatch({ type: 'setFieldValue', name, value });
-  }
-  
-  getValue(name: string, defVal: any) {
-    return (this.hasField(name) && this.getField(name).value) || defVal;
-  }
-
-  setValidity(name: string, valid: boolean) {
-    this.dispatch({ type: 'setFieldValidity', name, valid });
-  }
-
-  isInvalid(name: string) {
-    return this.hasField(name) && this.getField(name).valid === false;
-  }
-
-  setError(name: string, error: any) {
-    this.dispatch({ type: 'setFieldError', name, error });
-  }
-
-  hasError(name: string) {
-    return this.hasField(name) && !! this.getField(name).error;
-  }
-
-  getError(name: string) {
-    return this.hasField(name) && this.getField(name).error;
-  }
-
-  getGlobalError() {
-    return this.state.error;
-  }
-
-  setGlobalError(error: any) {
-    this.dispatch({ type: 'setGlobalError', error });
-  }
-
-  resetGlobalError(error: any) {
-    this.dispatch({ type: 'resetGlobalError' });
-  }
 }

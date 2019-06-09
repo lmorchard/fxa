@@ -1,5 +1,4 @@
 import React, { useCallback } from 'react';
-import classNames from 'classnames';
 import {
   injectStripe,
   CardNumberElement,
@@ -8,8 +7,8 @@ import {
   Elements,
   ReactStripeElements
 } from 'react-stripe-elements';
-import { Form, Field, FieldGroup, Input, StripeElement, SubmitButton, Checkbox } from './fields';
-import { useFormValidator, State } from './validator';
+import { Form, FieldGroup, Input, StripeElement, SubmitButton, Checkbox } from './fields';
+import { useFormValidator } from './validator';
 
 import './index.scss';
 
@@ -52,6 +51,7 @@ export const PaymentForm = ({
 
   return (
     <Form validator={validator} onSubmit={onSubmit} className="payment">
+      {/* TODO: global validator function as Form prop, per-field validator as field prop! */}
       <h3><span>Billing information</span></h3>
 
       <Input type="text" name="name" label="Name as it appears on your card"
