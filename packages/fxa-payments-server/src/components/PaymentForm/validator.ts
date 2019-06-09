@@ -1,213 +1,195 @@
 import { useReducer, useMemo } from 'react';
 
-export enum FieldTypeNames { inputField, stripeField }
+export const useFormValidator = (): Validator => {
+  const [ state, dispatch ] = useReducer(mainReducer, initialState);
+  return useMemo<Validator>(
+    () => new Validator(state, dispatch),
+    [ state, dispatch ]
+  );
+};
 
-type BaseFieldState = {
-  fieldType?: any,
-  value?: any,
+type State = {
+  error: any,
+  fields: { [name: string]: FieldState },
+};
+
+export type FieldType = 'input' | 'stripe';
+
+type FieldState = {
+  fieldType: FieldType,
+  value: any,
   required: boolean,
   valid: boolean | null,
   error: string | null,
 };
 
-type InputFieldState = BaseFieldState & {
-  fieldType: FieldTypeNames.inputField,
-};
-
-type StripeFieldState = BaseFieldState & { 
-  fieldType: FieldTypeNames.stripeField,
-  value?: stripe.elements.ElementChangeResponse,
-};
-
-type FieldState = BaseFieldState | InputFieldState | StripeFieldState;
-
-enum ActionTypes {
-  initializeField,
-  changeField,
-  appendGlobalError,
-  resetGlobalError,
-};
-
-type InitializeInputFieldActionType = {
-  type: ActionTypes.initializeField,
-  name: string,
-  required: boolean,
-};
-
-type BaseChangeActionType = {
-  type: ActionTypes.changeField,
-  name: string,
-};
-
-type ChangeInputFieldActionType = BaseChangeActionType & {
-  type: ActionTypes.changeField,
-  fieldType: FieldTypeNames.inputField,
-  value: any
-};
-
-type ChangeStripeFieldActionType = BaseChangeActionType & {
-  type: ActionTypes.changeField,
-  fieldType: FieldTypeNames.stripeField,
-  value: stripe.elements.ElementChangeResponse
-};
-
-type AppendGlobalErrorActionType = {
-  type: ActionTypes.appendGlobalError,
-  value: string,
-};
-
-type ResetGlobalErrorActionType = {
-  type: ActionTypes.resetGlobalError,
-};
-
-type ActionType = 
-  InitializeInputFieldActionType
-  | ChangeInputFieldActionType
-  | ChangeStripeFieldActionType
-  | AppendGlobalErrorActionType
-  | ResetGlobalErrorActionType;
-
-export type ValidatorStateType = {
-  errors: string[],
-  fields: { [name: string]: FieldState },
-};
-
-const initialState: ValidatorStateType = {
-  errors: [],
+const initialState: State = {
+  error: null,
   fields: {},
 };
 
-type ValidatorReducer = 
-  (oldState: ValidatorStateType, action: ActionType) => ValidatorStateType;
+type Action =
+  | { type: 'initializeField', name: string, fieldType: FieldType, required: boolean }
+  | { type: 'setFieldValue', name: string, value: any }
+  | { type: 'setFieldValidity', name: string, valid: boolean }
+  | { type: 'setFieldError', name: string, error: any }
+  | { type: 'setGlobalError', error: any }
+  | { type: 'resetGlobalError' };
 
-const reducer: ValidatorReducer = (oldState, action) => {  
-  const state = {
-    errors: oldState.errors,
-    fields: { ...oldState.fields }
-  };
+type Reducer = (state: State) => State;
+type ActionReducer = (state: State, action: Action) => State;
 
-  switch(action.type) {
-    case ActionTypes.appendGlobalError:
-      state.errors.push(action.value);
-      break;
-   
-    case ActionTypes.resetGlobalError:
-      state.errors.length = 0;
-      break;
+const mainReducer: ActionReducer = (state, action) => {
+  state = actionReducer(state, action);
+  state = requiredInputValidationReducer(state);
+  state = stripeElementValidationReducer(state);
+  return state;
+}
 
-    case ActionTypes.initializeField:
-      state.fields[action.name] = {
-        required: action.required,
-        valid: null,
-        error: null,
-      };
-      break;
-
-    case ActionTypes.changeField:
-      state.fields[action.name] = {
-        ...state.fields[action.name],
-        fieldType: action.fieldType,
-        value: action.value,
-        valid: null,
-        error: null
-      };
-      break;  
+const setFieldState = (state: State, name: string, fn: (field: FieldState) => FieldState) => ({
+  ...state,
+  fields: {
+    ...state.fields,
+    [ name ]: fn(state.fields[name])
   }
+});
 
-  // Process validation state from self-validating Stripe elements
-  const fields = Object.entries(state.fields);
-  const stripeFields = fields.filter(([ _, field ]) =>
-      field.fieldType && field.fieldType === FieldTypeNames.stripeField);
+const actionReducer: ActionReducer = (state, action) => {
+  switch (action.type) {
+    case 'initializeField': {
+      const { name, fieldType, required } = action;
+      return setFieldState(state, name, () =>
+        ({ fieldType, required, value: null, valid: null, error: null }));
+    }
+    case 'setFieldValue': {
+      const { name, value } = action;
+      return setFieldState(state, name, field =>
+          ({ ...field, value }));
+    }
+    case 'setFieldError': {
+      const { name, error } = action;
+      return setFieldState(state, name, field =>
+        ({ ...field, valid: false, error }));
+    }
+    case 'setFieldValidity': {
+      const { name, valid } = action;
+      return setFieldState(state, name, field =>
+        ({ ...field, valid, error: null }));
+    }
+    case 'setGlobalError': {
+      const { error } = action;
+      return ({ ...state, error });
+    }
+    case 'resetGlobalError': {
+      return ({ ...state, error: null });
+    }
+  }
+};
+
+const requiredInputValidationReducer: Reducer = (state) => {
+  const fields = Object
+    .entries(state.fields)
+    .filter(([ _, field ]) => field.fieldType === 'input');
+
+  for (const [ name, field ] of fields) {
+    const { required, value } = field;
+    if (required && value !== null && ! value) {
+      state = actionReducer(state, { name, type: 'setFieldError', error: 'This field is required' });
+    } else {
+      state = actionReducer(state, { name, type: 'setFieldValidity', valid: true });
+    }
+  }
+  
+  return state;
+}
+
+const stripeElementValidationReducer: Reducer = (state) => {
+  const stripeFields = Object
+    .entries(state.fields)
+    .filter(([ _, field ]) => field.fieldType === 'stripe');
+
   for (const [ name, field ] of stripeFields) {
     const value: stripe.elements.ElementChangeResponse = field.value;
-    if (value.complete) {
-      state.fields[name] = {
-        ...field,
-        valid: true,
-        error: null,
-      };
-    } else if (value.error && value.error.message) {
-      state.fields[name] = {
-        ...field,
-        valid: false,
-        error: value.error.message,
-      };
-    }      
+    if (value !== null) {
+      if (value.complete) {
+        state = actionReducer(state, { name, type: 'setFieldValidity', valid: true });
+      } else if (value.error && value.error.message) {
+        state = actionReducer(state, { name, type: 'setFieldError', error: value.error.message });
+      }
+    }
   }
 
   return state;
 }
 
-type ValidatorFunction = (state: ValidatorStateType) => ValidatorStateType;
+export class Validator {
+  state: State;
+  dispatch: React.Dispatch<Action>;
 
-export interface Validator {
-  state: ValidatorStateType,
-  dispatch: React.Dispatch<ActionType>,
-  allValid: () => boolean,
-  initializeField: (props: { name: string, required?: boolean }) => void,
-  appendError: (value: string) => void;
-  resetErrors: () => void;
-  getValue: (name: string, defVal?: any) => any;
-  isInvalid: (name: string) => boolean;
-  hasError: (name: string) => boolean;  
-  getError: (name: string) => string | null;
-  onInputChange: (name: string) => (ev: React.ChangeEvent<HTMLInputElement>) => void;
-  onCheckboxChange: (name: string) => (ev: React.ChangeEvent<HTMLInputElement>) => void;
-  onStripeChange: (name: string) => (ev: stripe.elements.ElementChangeResponse) => void;
-}
+  constructor(state: State, dispatch: React.Dispatch<Action>) {
+    this.state = state;
+    this.dispatch = dispatch;
+  }
 
-export const useFormValidator = (validator?: ValidatorFunction): Validator => {
-  const validatedReducer = useMemo<ValidatorReducer>(
-    () => validator
-      ? (state, action) => validator(reducer(state, action)) 
-      : reducer,
-    [ validator ]
-  );
-  
-  const [ state, dispatch ] = useReducer(validatedReducer, initialState);
-
-  return useMemo<Validator>(() => ({
-    state,
-    dispatch,
-
-    allValid: () => Object
-      .values(state.fields)
+  allValid() {
+    return Object
+      .values(this.state.fields)
       .filter(field => field.required)
-      .every(field => field.valid === true),
+      .every(field => field.valid === true);
+  }
 
-    getValue: (name, defVal) => (state.fields[name] && state.fields[name].value) || defVal,
-    isValid: name => state.fields[name] && state.fields[name].valid === true,
-    isInvalid: name => state.fields[name] && state.fields[name].valid === false,
-    hasError: name => state.fields[name] && !! state.fields[name].error,
-    getError: name => state.fields[name] && state.fields[name].error,
-    appendError: value => dispatch({ type: ActionTypes.appendGlobalError, value }),
-    resetErrors: () => dispatch({ type: ActionTypes.resetGlobalError }),
+  initializeField(
+    { name, fieldType, required}:
+    { name: string, fieldType: FieldType, required: boolean}
+  ) {
+    this.dispatch({ type: 'initializeField', name, fieldType, required });
+  }
 
-    initializeField: ({ name, required = false }) => dispatch({
-      type: ActionTypes.initializeField,
-      name,
-      required,
-    }),
+  hasField(name: string) {
+    return name in this.state.fields;
+  }
 
-    onInputChange: name => ev => dispatch({
-      type: ActionTypes.changeField,
-      fieldType: FieldTypeNames.inputField,
-      name,
-      value: ev.target.value,
-    }),
+  getField(name: string) {
+    return this.state.fields[name];
+  }
 
-    onCheckboxChange: name => ev => dispatch({
-      type: ActionTypes.changeField,
-      fieldType: FieldTypeNames.inputField,
-      name,
-      value: ev.target.checked,
-    }),
+  setValue(name: string, value: any) {
+    this.dispatch({ type: 'setFieldValue', name, value });
+  }
+  
+  getValue(name: string, defVal: any) {
+    return (this.hasField(name) && this.getField(name).value) || defVal;
+  }
 
-    onStripeChange: name => ev => dispatch({
-      type: ActionTypes.changeField,
-      fieldType: FieldTypeNames.stripeField,
-      name,
-      value: ev,
-    }),
-  }), [ state, dispatch ]);
-};
+  setValidity(name: string, valid: boolean) {
+    this.dispatch({ type: 'setFieldValidity', name, valid });
+  }
+
+  isInvalid(name: string) {
+    return this.hasField(name) && this.getField(name).valid === false;
+  }
+
+  setError(name: string, error: any) {
+    this.dispatch({ type: 'setFieldError', name, error });
+  }
+
+  hasError(name: string) {
+    return this.hasField(name) && !! this.getField(name).error;
+  }
+
+  getError(name: string) {
+    return this.hasField(name) && this.getField(name).error;
+  }
+
+  getGlobalError() {
+    return this.state.error;
+  }
+
+  setGlobalError(error: any) {
+    this.dispatch({ type: 'setGlobalError', error });
+  }
+
+  resetGlobalError(error: any) {
+    this.dispatch({ type: 'resetGlobalError' });
+  }
+}

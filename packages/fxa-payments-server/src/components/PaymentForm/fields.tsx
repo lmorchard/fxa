@@ -1,7 +1,7 @@
-import React, { useContext, useRef, useEffect, DetailedHTMLProps, FormHTMLAttributes } from 'react';
+import React, { useContext, useCallback, useRef, useEffect, DetailedHTMLProps, FormHTMLAttributes } from 'react';
 import { ReactStripeElements } from 'react-stripe-elements';
 import classNames from 'classnames';
-import { Validator } from './validator';
+import { Validator, FieldType } from './validator';
 import Tooltip from '../Tooltip';
 
 type FormContextType = { validator: Validator };
@@ -45,12 +45,14 @@ type FieldProps = {
 };
 
 type FieldHOCProps = {
+  fieldType: FieldType,
   tooltipParentRef?: React.MutableRefObject<any>,
   children: React.ReactNode,
 } & FieldProps;
 
 export const Field = ({
   tooltipParentRef,
+  fieldType,
   name,
   tooltip = true,
   required = false,
@@ -60,7 +62,7 @@ export const Field = ({
 }: FieldHOCProps) => {
   const { validator } = useContext(FormContext) as FormContextType;
   useEffect(
-    () => validator.initializeField({ name, required }),
+    () => validator.initializeField({ name, required, fieldType }),
     [ name, required ]
   );
   return (
@@ -88,9 +90,13 @@ export const Input = (props: InputProps) => {
     ...childProps
   } = props;
   const { validator } = useContext(FormContext) as FormContextType;
+  const onChange = useCallback(
+    (ev) => validator.setValue(name, ev.target.value),
+    [ name, validator ]
+  );
   const tooltipParentRef = useRef<HTMLInputElement>(null);
   return (
-    <Field {...{ tooltipParentRef, name, tooltip, required, label, className }}>
+    <Field {...{ fieldType: 'input', tooltipParentRef, name, tooltip, required, label, className }}>
       <input {...{
         ...childProps,
         ref: tooltipParentRef,
@@ -98,8 +104,8 @@ export const Input = (props: InputProps) => {
         required,
         className: classNames({ invalid: validator.isInvalid(name) }),
         value: validator.getValue(name, ''),
-        onChange: validator.onInputChange(name),
-        onBlur: validator.onInputChange(name),
+        onChange: onChange,
+        onBlur: onChange,
       }} />
     </Field>
   );
@@ -120,13 +126,17 @@ export const StripeElement = (props: StripeElementProps) => {
     ...childProps
   } = props;
   const { validator } = useContext(FormContext) as FormContextType;
+  const onChange = useCallback(
+    (ev) => validator.setValue(name, ev),
+    [ name, validator ]
+  );
   const tooltipParentRef = useRef<any>(null);
   return (
-    <Field {...{ tooltipParentRef, name, tooltip, required, label, className }}>
+    <Field {...{ fieldType: 'stripe', tooltipParentRef, name, tooltip, required, label, className }}>
       <ChildElement {...{
         ...childProps,
         ref: tooltipParentRef,
-        onChange: validator.onStripeChange(name)
+        onChange
       }} />
     </Field>
   );
@@ -144,14 +154,18 @@ export const Checkbox = (props: CheckboxProps) => {
     ...childProps
   } = props;
   const { validator } = useContext(FormContext) as FormContextType;
+  const onChange = useCallback(
+    (ev) => validator.setValue(name, ev.target.checked),
+    [ name, validator ]
+  );
   return (
-    <Field {...{ name, className, required, tooltip: false }}>
+    <Field {...{ fieldType: 'input', name, className, required, tooltip: false }}>
       <input {...{
         ...childProps,
         type: 'checkbox',
         name,
-        onChange: validator.onCheckboxChange(name),
-        onBlur: validator.onCheckboxChange(name),
+        onChange,
+        onBlur: onChange,
       }} />
       <span className="label-text checkbox">{label}</span>
     </Field>
@@ -172,7 +186,7 @@ export const SubmitButton = (props: SubmitButtonProps) => {
   } = props;
   const { validator } = useContext(FormContext) as FormContextType;
   return (
-    <Field {...{ name, label, className, tooltip: false }}>
+    <Field {...{ fieldType: 'input', name, label, className, tooltip: false }}>
       <button {...{
         ...childProps,
         type: 'submit',

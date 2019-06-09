@@ -9,7 +9,7 @@ import {
   ReactStripeElements
 } from 'react-stripe-elements';
 import { Form, Field, FieldGroup, Input, StripeElement, SubmitButton, Checkbox } from './fields';
-import { useFormValidator, ValidatorStateType } from './validator';
+import { useFormValidator, State } from './validator';
 
 import './index.scss';
 
@@ -23,26 +23,6 @@ const STRIPE_ELEMENT_STYLES = {
   }
 };
 
-function validate(state: ValidatorStateType) {
-  const { fields } = state;
-  
-  if (typeof fields.name.value !== 'undefined') {
-    if (fields.confirm.value === true) {
-      fields.confirm.valid = true;
-    }
-    if (fields.zip.value) {
-      fields.zip.valid = true;
-    }
-    if (! fields.name.value) {
-      fields.name.error = 'Please enter your name';
-    } else {
-      fields.name = { ...fields.name, error: null, valid: true };
-    }
-  }
-
-  return state;
-}
-
 export type PaymentFormProps = {
   onPayment: (tokenResponse: stripe.TokenResponse) => void,
   onPaymentError: (error: any) => void,
@@ -53,7 +33,7 @@ export const PaymentForm = ({
   onPaymentError,
   stripe,
 }: PaymentFormProps) => {
-  const validator = useFormValidator(validate);
+  const validator = useFormValidator();
 
   const onSubmit = useCallback(ev => {
     ev.preventDefault();
