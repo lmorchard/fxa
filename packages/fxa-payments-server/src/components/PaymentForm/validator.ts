@@ -148,7 +148,6 @@ export interface Validator {
   appendError: (value: string) => void;
   resetErrors: () => void;
   getValue: (name: string, defVal?: any) => any;
-  isValid: (name: string) => boolean;
   isInvalid: (name: string) => boolean;
   hasError: (name: string) => boolean;  
   getError: (name: string) => string | null;
@@ -164,14 +163,18 @@ export const useFormValidator = (validator?: ValidatorFunction): Validator => {
       : reducer,
     [ validator ]
   );
+  
   const [ state, dispatch ] = useReducer(validatedReducer, initialState);
+
   return useMemo<Validator>(() => ({
     state,
     dispatch,
+
     allValid: () => Object
       .values(state.fields)
       .filter(field => field.required)
       .every(field => field.valid === true),
+
     getValue: (name, defVal) => (state.fields[name] && state.fields[name].value) || defVal,
     isValid: name => state.fields[name] && state.fields[name].valid === true,
     isInvalid: name => state.fields[name] && state.fields[name].valid === false,
@@ -179,26 +182,27 @@ export const useFormValidator = (validator?: ValidatorFunction): Validator => {
     getError: name => state.fields[name] && state.fields[name].error,
     appendError: value => dispatch({ type: ActionTypes.appendGlobalError, value }),
     resetErrors: () => dispatch({ type: ActionTypes.resetGlobalError }),
-    initializeField: ({
-      name,
-      required = false,
-    }) => dispatch({
+
+    initializeField: ({ name, required = false }) => dispatch({
       type: ActionTypes.initializeField,
       name,
       required,
     }),
+
     onInputChange: name => ev => dispatch({
       type: ActionTypes.changeField,
       fieldType: FieldTypeNames.inputField,
       name,
       value: ev.target.value,
     }),
+
     onCheckboxChange: name => ev => dispatch({
       type: ActionTypes.changeField,
       fieldType: FieldTypeNames.inputField,
       name,
       value: ev.target.checked,
     }),
+
     onStripeChange: name => ev => dispatch({
       type: ActionTypes.changeField,
       fieldType: FieldTypeNames.stripeField,

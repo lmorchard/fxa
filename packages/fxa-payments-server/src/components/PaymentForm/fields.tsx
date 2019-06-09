@@ -1,17 +1,17 @@
 import React, { useContext, useRef, useEffect, DetailedHTMLProps, FormHTMLAttributes } from 'react';
+import { ReactStripeElements } from 'react-stripe-elements';
+import classNames from 'classnames';
 import { Validator } from './validator';
 import Tooltip from '../Tooltip';
+
+type FormContextType = { validator: Validator };
+
+export const FormContext = React.createContext<FormContextType | null>(null);
 
 type FormProps = {
   children: React.ReactNode,
   validator: Validator,
 } & DetailedHTMLProps<FormHTMLAttributes<HTMLFormElement>, HTMLFormElement>;
-
-type FormContextType = {
-  validator?: Validator,
-};
-
-export const FormContext = React.createContext<FormContextType>({});
 
 export const Form = (props: FormProps) => {
   const {
@@ -26,15 +26,11 @@ export const Form = (props: FormProps) => {
       </FormContext.Provider>
     </form>
   );
-}
-
-type FieldGroupProps = {
-  children: React.ReactNode,
 };
 
-export const FieldGroup = ({
-  children,
-}: FieldGroupProps) => (
+type FieldGroupProps = { children: React.ReactNode };
+
+export const FieldGroup = ({ children }: FieldGroupProps) => (
   <div className="input-row-group">
     {children}
   </div>
@@ -46,75 +42,143 @@ type FieldProps = {
   required?: boolean,
   label?: string | React.ReactNode,
   className?: string,
-  children: (props: InputPropsType) => React.ReactNode,
 };
 
+type FieldHOCProps = {
+  tooltipParentRef?: React.MutableRefObject<any>,
+  children: React.ReactNode,
+} & FieldProps;
+
 export const Field = ({
+  tooltipParentRef,
   name,
   tooltip = true,
   required = false,
   label,
   className='input-row',
   children,
-}: FieldProps) => {
-  const { validator } = useContext(FormContext);
-  const ref = useRef<any>(null);
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const props = inputProps(ref, name, validator);
-
-  /* eslint-disable react-hooks/exhaustive-deps */
+}: FieldHOCProps) => {
+  const { validator } = useContext(FormContext) as FormContextType;
   useEffect(
-    () => validator && validator.initializeField({ name, required }),
+    () => validator.initializeField({ name, required }),
     [ name, required ]
   );
-  /* eslint-enable react-hooks/exhaustive-deps */
-
   return (
     <div className={className}>
       <label>
         {label && <span className="label-text">{label}</span>}
-        {children(props)}
-        {tooltip && props.hasError() && <Tooltip {...{ parentRef: ref }}>{props.error()}</Tooltip>}
+        {children}
+        {tooltip && tooltipParentRef && validator.hasError(name) &&
+          <Tooltip parentRef={tooltipParentRef}>{validator.getError(name)}</Tooltip>}
       </label>
     </div>
   );
 };
 
-type InputPropsType = {
-  ref: React.MutableRefObject<any>,
-  allValid: () => boolean,
-  hasError: () => boolean,
-  error: () => string | null,
-  invalid: () => boolean,
-  value: (defVal: any) => any,
-  onInputChange: (ev: React.ChangeEvent<HTMLInputElement>) => void,
-  onCheckboxChange: (ev: React.ChangeEvent<HTMLInputElement>) => void,
-  onStripeChange: (ev: stripe.elements.ElementChangeResponse) => void,
+type InputProps = FieldProps &
+  React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement>;
+
+export const Input = (props: InputProps) => {
+  const {
+    name,
+    label,
+    tooltip = true,
+    required = false,
+    className,
+    ...childProps
+  } = props;
+  const { validator } = useContext(FormContext) as FormContextType;
+  const tooltipParentRef = useRef<HTMLInputElement>(null);
+  return (
+    <Field {...{ tooltipParentRef, name, tooltip, required, label, className }}>
+      <input {...{
+        ...childProps,
+        ref: tooltipParentRef,
+        name,
+        required,
+        className: classNames({ invalid: validator.isInvalid(name) }),
+        value: validator.getValue(name, ''),
+        onChange: validator.onInputChange(name),
+        onBlur: validator.onInputChange(name),
+      }} />
+    </Field>
+  );
 };
 
-const inputProps = (
-  ref: React.MutableRefObject<any>,
-  name: string,
-  validator: Validator | undefined,
-): InputPropsType => validator ? ({
-  ref,
-  allValid: () => validator.allValid(),
-  hasError: () => validator.hasError(name),
-  error: () => validator.getError(name),
-  invalid: () => validator.isInvalid(name),
-  value: (defVal) => validator.getValue(name, defVal),
-  onInputChange: validator.onInputChange(name),
-  onCheckboxChange: validator.onCheckboxChange(name),
-  onStripeChange: validator.onStripeChange(name),
-}) : ({
-  ref,
-  allValid: () => false,
-  hasError: () => false,
-  error: () => null,
-  invalid: () => false,
-  value: () => null,
-  onInputChange: () => {},
-  onCheckboxChange: () => {},
-  onStripeChange: () => {},
-});
+type StripeElementProps = FieldProps &
+  { component: any } &
+  ReactStripeElements.ElementProps;
+
+export const StripeElement = (props: StripeElementProps) => {
+  const {
+    component: ChildElement,
+    name,
+    tooltip = true,
+    required = false,
+    label,
+    className,
+    ...childProps
+  } = props;
+  const { validator } = useContext(FormContext) as FormContextType;
+  const tooltipParentRef = useRef<any>(null);
+  return (
+    <Field {...{ tooltipParentRef, name, tooltip, required, label, className }}>
+      <ChildElement {...{
+        ...childProps,
+        ref: tooltipParentRef,
+        onChange: validator.onStripeChange(name)
+      }} />
+    </Field>
+  );
+ }
+
+type CheckboxProps = FieldProps &
+  React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement>;
+
+export const Checkbox = (props: CheckboxProps) => {
+  const {
+    name,
+    label,
+    required = false,
+    className='input-row input-row--checkbox',
+    ...childProps
+  } = props;
+  const { validator } = useContext(FormContext) as FormContextType;
+  return (
+    <Field {...{ name, className, required, tooltip: false }}>
+      <input {...{
+        ...childProps,
+        type: 'checkbox',
+        name,
+        onChange: validator.onCheckboxChange(name),
+        onBlur: validator.onCheckboxChange(name),
+      }} />
+      <span className="label-text checkbox">{label}</span>
+    </Field>
+  );
+};
+
+type SubmitButtonProps = FieldProps &
+  { children: React.ReactNode } & 
+  React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>;
+
+export const SubmitButton = (props: SubmitButtonProps) => {
+  const {
+    name,
+    label,
+    children,
+    className = 'button-row',
+    ...childProps
+  } = props;
+  const { validator } = useContext(FormContext) as FormContextType;
+  return (
+    <Field {...{ name, label, className, tooltip: false }}>
+      <button {...{
+        ...childProps,
+        type: 'submit',
+        name,
+        disabled: (! validator.allValid())
+      }}>{children}</button>
+    </Field>
+  );
+};

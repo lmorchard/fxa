@@ -8,7 +8,7 @@ import {
   Elements,
   ReactStripeElements
 } from 'react-stripe-elements';
-import { Form, Field, FieldGroup } from './fields';
+import { Form, Field, FieldGroup, Input, StripeElement, SubmitButton, Checkbox } from './fields';
 import { useFormValidator, ValidatorStateType } from './validator';
 
 import './index.scss';
@@ -74,74 +74,35 @@ export const PaymentForm = ({
     <Form validator={validator} onSubmit={onSubmit} className="payment">
       <h3><span>Billing information</span></h3>
 
-      <Field name="name" label="Name as it appears on your card" required>
-        {({ ref, invalid, value, onInputChange }) => (
-          <input
-            ref={ref} type="text"
-            className={classNames({ invalid: invalid() })}
-            value={value('')} spellCheck={false} required autoFocus 
-            onChange={onInputChange}
-            onBlur={onInputChange} />
-        )}
-      </Field>
+      <Input type="text" name="name" label="Name as it appears on your card"
+        required autoFocus spellCheck={false} />
 
       <FieldGroup>
 
-        <Field name="creditCardNumber" label="Credit Card Number" className="input-row input-row--xl" required>
-          {({ ref, onStripeChange }) => (
-            <CardNumberElement
-              ref={ref}
-              style={STRIPE_ELEMENT_STYLES}
-              onChange={onStripeChange} />
-          )}
-        </Field>
+        <StripeElement component={CardNumberElement}
+          name="creditCardNumber" label="Credit Card Number"
+          style={STRIPE_ELEMENT_STYLES}
+          className="input-row input-row--xl" required />
 
-        <Field name="expDate" label="Exp. Date" required>
-          {({ ref, onStripeChange }) => (
-            <CardExpiryElement
-              ref={ref}
-              style={STRIPE_ELEMENT_STYLES}
-              onChange={onStripeChange} />
-          )}
-        </Field>
+        <StripeElement component={CardExpiryElement}
+          name="expDate" label="Exp. Date"
+          style={STRIPE_ELEMENT_STYLES} required />
 
-        <Field name="cvc" label="CVC" required>
-          {({ ref, onStripeChange }) => (
-            <CardCVCElement
-              ref={ref}
-              style={STRIPE_ELEMENT_STYLES}
-              onChange={onStripeChange} />
-          )}
-        </Field>
+        <StripeElement component={CardCVCElement}
+          name="cvc" label="CVC"
+          style={STRIPE_ELEMENT_STYLES} required />
 
-        <Field name="zip" label="Zip Code" required>
-          {({ ref, invalid, value, onInputChange }) => (
-            <input
-              ref={ref} name="zip" type="number" maxLength={5}
-              className={classNames({ invalid: invalid() })}
-              value={value('')} spellCheck={false} required
-              onChange={onInputChange} />
-          )}
-        </Field>
+        <Input type="number" name="zip" label="Zip Code" maxLength={5} required />
 
       </FieldGroup>
      
-      <Field name="confirm" className="input-row input-row--checkbox" required tooltip={false}>
-        {({ onCheckboxChange }) => <>
-          <input type="checkbox" onChange={onCheckboxChange} />
-          <span className="label-text disclaimer">
-            I authorize Mozilla, maker of Firefox products, to charge my
-            payment method [cost] per [time frame], according to payment
-            terms, until I cancel my subscription.
-          </span>
-        </>}
-      </Field>
+      <Checkbox name="confirm" required label={`
+        I authorize Mozilla, maker of Firefox products, to charge my
+        payment method [cost] per [time frame], according to payment
+        terms, until I cancel my subscription.
+      `} />
 
-      <Field name="submit" className="button-row" tooltip={false}>
-        {({ allValid }) => (
-          <button id="submit-btn" type="submit" disabled={! allValid()}>Submit</button>
-        )}
-      </Field>
+      <SubmitButton name="submit">Submit</SubmitButton>
 
     </Form>
   );
