@@ -60,10 +60,16 @@ export const Field = ({
   children,
 }: FieldHOCProps) => {
   const { validator } = useContext(FormContext) as FormContextValue;
+
+  /* eslint-disable react-hooks/exhaustive-dep */
+  // Disabling lint rule because registering a field changes the validator 
+  // instance, so including validator in list of deps causes an infinite loop
   useEffect(
-    () => validator.initializeField({ name, required, fieldType }),
+    () => validator.registerField({ name, required, fieldType }),
     [ name, required, fieldType ]
   );
+  /* eslint-enable react-hooks/exhaustive-dep */
+
   return (
     <div className={className}>
       <label>
@@ -82,7 +88,10 @@ type InputProps = FieldProps &
 export const Input = (props: InputProps) => {
   const { name, label, tooltip = true, required = false, className, ...childProps } = props;
   const { validator } = useContext(FormContext) as FormContextValue;
-  const onChange = useCallback( (ev) => validator.setValue(name, ev.target.value), [ name, validator ]);
+  const onChange = useCallback(
+    (ev) => validator.setValue(name, ev.target.value),
+    [ name, validator ]
+  );
   const tooltipParentRef = useRef<HTMLInputElement>(null);
   return (
     <Field {...{ fieldType: 'input', tooltipParentRef, name, tooltip, required, label, className }}>
@@ -126,7 +135,10 @@ type CheckboxProps = FieldProps &
 export const Checkbox = (props: CheckboxProps) => {
   const { name, label, required = false, className='input-row input-row--checkbox', ...childProps } = props;
   const { validator } = useContext(FormContext) as FormContextValue;
-  const onChange = useCallback((ev) => validator.setValue(name, ev.target.checked), [ name, validator ]);
+  const onChange = useCallback(
+    (ev) => validator.setValue(name, ev.target.checked),
+    [ name, validator ]
+  );
   return (
     <Field {...{ fieldType: 'input', name, className, required, tooltip: false }}>
       <input {...{ ...childProps, type: 'checkbox', name, onChange, onBlur: onChange, }} />
