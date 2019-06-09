@@ -36,26 +36,28 @@ export const PaymentForm = ({
 
   const onSubmit = useCallback(ev => {
     ev.preventDefault();
-
-    // TODO: use react state on form fields along with validation
-    const data = new FormData(ev.target);
-    const name = String(data.get('name'));
-
+    const { name, zip } = validator.getFields();
     if (stripe) {
       stripe
-        .createToken({ name })
+        .createToken({ name, address_zip: zip })
         .then(onPayment)
         .catch(onPaymentError);
     }
-  }, [ onPayment, onPaymentError, stripe ]);
+  }, [ validator, onPayment, onPaymentError, stripe ]);
 
   return (
     <Form validator={validator} onSubmit={onSubmit} className="payment">
-      {/* TODO: global validator function as Form prop, per-field validator as field prop! */}
       <h3><span>Billing information</span></h3>
 
       <Input type="text" name="name" label="Name as it appears on your card"
-        required autoFocus spellCheck={false} />
+        required autoFocus spellCheck={false} 
+        validate={value => {
+          let error = null;
+          if (value !== null && ! value) {
+            error = 'Please enter your name';
+          }
+          return { value, error };
+        }} />
 
       <FieldGroup>
 
@@ -72,7 +74,21 @@ export const PaymentForm = ({
           name="cvc" label="CVC"
           style={STRIPE_ELEMENT_STYLES} required />
 
-        <Input type="number" name="zip" label="Zip Code" maxLength={5} required />
+        <Input type="number" name="zip" label="Zip Code" maxLength={5} required
+          validate={value => {
+            let error = null;
+            if (value !== null) {
+              value = ('' + value).substr(0, 5);
+              if (! value) {
+                error = 'Zip code is required';
+              }
+              if (value.length !== 5) {
+                error = 'Zip code is too short';
+              }
+            }
+            return { value, error };
+          }}
+        />
 
       </FieldGroup>
      

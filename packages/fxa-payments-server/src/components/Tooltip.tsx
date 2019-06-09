@@ -51,9 +51,7 @@ export const Tooltip = ({
   // After initial render, nudge tooltip position relative to parent element
   useEffect(() => {
     const tooltipEl = tooltipRef.current;
-    // HACK: A Stripe element yields a ref to the component, which hides its
-    // underlying DOM element in a _ref property
-    const parentEl = parentRef.current._ref || parentRef.current;
+    const parentEl = parentRef.current;
     if (tooltipEl && parentEl) {
       tooltipEl.style.top = doShowBelow
         ? parentEl.offsetTop + parentEl.offsetHeight + PADDING_ABOVE_TOOLTIP_PX + 'px'

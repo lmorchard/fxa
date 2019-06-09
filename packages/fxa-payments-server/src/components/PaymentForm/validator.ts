@@ -1,7 +1,10 @@
-import { useReducer, useMemo, useEffect } from 'react';
+import { useReducer, useMemo } from 'react';
 
-export const useFormValidator = (): Validator => {
-  const [ state, dispatch ] = useReducer(mainReducer, initialState);
+export const useFormValidator = (formReducer?: Reducer): Validator => {
+  const reducer = formReducer
+    ? (state: State, action: Action) => formReducer(baseReducer(state, action))
+    : baseReducer;
+  const [ state, dispatch ] = useReducer(reducer, initialState);
   return useMemo(
     () => new Validator(state, dispatch),
     [ state, dispatch ]
@@ -15,6 +18,12 @@ export class Validator {
   constructor(state: State, dispatch: React.Dispatch<Action>) {
     this.state = state;
     this.dispatch = dispatch;
+  }
+
+  getFields(): { [name: string]: any } {
+    return Object
+      .entries(this.state.fields)
+      .reduce((acc, [ name, field ]) => ({ ...acc, [ name ]: field.value }), {});
   }
 
   allValid() {
@@ -31,6 +40,16 @@ export class Validator {
     this.dispatch({ type: 'registerField', name, fieldType, required });
   }
 
+  updateField(
+    { name, value, valid, error = null }:
+    { name: string, value: any, valid?: boolean, error?: any}
+  ) {
+    if (typeof valid === 'undefined') {
+      valid = !! error;
+    }
+    return this.dispatch({ type: 'updateField', name, value, valid, error });
+  }
+
   hasField(name: string) {
     return name in this.state.fields;
   }
@@ -38,25 +57,13 @@ export class Validator {
   getField(name: string) {
     return this.state.fields[name] || {};
   }
-
-  setValue(name: string, value: any) {
-    this.dispatch({ type: 'setFieldValue', name, value });
-  }
   
   getValue(name: string, defVal: any) {
     return (this.hasField(name) && this.getField(name).value) || defVal;
   }
 
-  setValidity(name: string, valid: boolean) {
-    this.dispatch({ type: 'setFieldValidity', name, valid });
-  }
-
   isInvalid(name: string) {
     return this.hasField(name) && this.getField(name).valid === false;
-  }
-
-  setError(name: string, error: any) {
-    this.dispatch({ type: 'setFieldError', name, error });
   }
 
   hasError(name: string) {
@@ -102,9 +109,7 @@ const initialState: State = {
 
 type Action =
   | { type: 'registerField', name: string, fieldType: FieldType, required: boolean }
-  | { type: 'setFieldValue', name: string, value: any }
-  | { type: 'setFieldValidity', name: string, valid: boolean }
-  | { type: 'setFieldError', name: string, error: any }
+  | { type: 'updateField', name: string, value: any, valid: boolean, error: any }
   | { type: 'setGlobalError', error: any }
   | { type: 'resetGlobalError' };
 
@@ -112,10 +117,8 @@ type Reducer = (state: State) => State;
 
 type ActionReducer = (state: State, action: Action) => State;
 
-const mainReducer: ActionReducer = (state, action) => {
+const baseReducer: ActionReducer = (state, action) => {
   state = actionReducer(state, action);
-  state = requiredInputValidationReducer(state);
-  state = stripeElementValidationReducer(state);
   return state;
 };
 
@@ -134,20 +137,10 @@ const actionReducer: ActionReducer = (state, action) => {
       return setFieldState(state, name, () =>
         ({ fieldType, required, value: null, valid: null, error: null }));
     }
-    case 'setFieldValue': {
-      const { name, value } = action;
+    case 'updateField': {
+      const { name, value, valid, error } = action;
       return setFieldState(state, name, field =>
-          ({ ...field, value }));
-    }
-    case 'setFieldError': {
-      const { name, error } = action;
-      return setFieldState(state, name, field =>
-        ({ ...field, valid: false, error }));
-    }
-    case 'setFieldValidity': {
-      const { name, valid } = action;
-      return setFieldState(state, name, field =>
-        ({ ...field, valid, error: null }));
+        ({ ...field, value, valid, error }));
     }
     case 'setGlobalError': {
       const { error } = action;
@@ -157,40 +150,5 @@ const actionReducer: ActionReducer = (state, action) => {
       return ({ ...state, error: null });
     }
   }
-};
-
-const requiredInputValidationReducer: Reducer = (state) => {
-  const fields = Object
-    .entries(state.fields)
-    .filter(([ _, field ]) => field.fieldType === 'input');
-
-  for (const [ name, field ] of fields) {
-    const { required, value } = field;
-    if (required && value !== null && ! value) {
-      state = actionReducer(state, { name, type: 'setFieldError', error: 'This field is required' });
-    } else {
-      state = actionReducer(state, { name, type: 'setFieldValidity', valid: true });
-    }
-  }
-  
-  return state;
-};
-
-const stripeElementValidationReducer: Reducer = (state) => {
-  const fields = Object
-    .entries(state.fields)
-    .filter(([ _, field ]) => field.fieldType === 'stripe');
-
-  for (const [ name, field ] of fields) {
-    const value: stripe.elements.ElementChangeResponse = field.value;
-    if (value !== null) {
-      if (value.complete) {
-        state = actionReducer(state, { name, type: 'setFieldValidity', valid: true });
-      } else if (value.error && value.error.message) {
-        state = actionReducer(state, { name, type: 'setFieldError', error: value.error.message });
-      }
-    }
-  };
-
   return state;
 };

@@ -61,9 +61,9 @@ export const Field = ({
 }: FieldHOCProps) => {
   const { validator } = useContext(FormContext) as FormContextValue;
 
-  /* eslint-disable react-hooks/exhaustive-dep */
-  // Disabling lint rule because registering a field changes the validator 
+  // Disabling lint rule because registering a field changes the validator
   // instance, so including validator in list of deps causes an infinite loop
+  /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(
     () => validator.registerField({ name, required, fieldType }),
     [ name, required, fieldType ]
@@ -82,17 +82,32 @@ export const Field = ({
   );
 };
 
-type InputProps = FieldProps &
+type InputProps = 
+  { validate?: (value: any) => { value: any, error: any } } &
+  FieldProps &
   React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement>;
 
 export const Input = (props: InputProps) => {
-  const { name, label, tooltip = true, required = false, className, ...childProps } = props;
+  const { validate, name, label, tooltip = true, required = false, className, ...childProps } = props;
   const { validator } = useContext(FormContext) as FormContextValue;
+  
   const onChange = useCallback(
-    (ev) => validator.setValue(name, ev.target.value),
+    (ev) => {
+      const { value } = ev.target;
+      if (validate) {
+        const { value: newValue, error } = validate(value);
+        validator.updateField({ name, value: newValue, error, valid: error === null });
+      } else if (required && value !== null && ! value) {
+        validator.updateField({ name, value, error: 'This field is required' });
+      } else {
+        validator.updateField({ name, value, valid: true });
+      }
+    },
     [ name, validator ]
   );
+
   const tooltipParentRef = useRef<HTMLInputElement>(null);
+  
   return (
     <Field {...{ fieldType: 'input', tooltipParentRef, name, tooltip, required, label, className }}>
       <input {...{
@@ -114,15 +129,42 @@ type StripeElementProps = FieldProps &
   ReactStripeElements.ElementProps;
 
 export const StripeElement = (props: StripeElementProps) => {
-  const { component: StripeElementComponent, name, tooltip = true, required = false, label, className, ...childProps } = props;
+  const {
+    component: StripeElementComponent,
+    name, tooltip = true,
+    required = false,
+    label,
+    className,
+    ...childProps
+  } = props;
+  
   const { validator } = useContext(FormContext) as FormContextValue;
-  const onChange = useCallback((ev) => validator.setValue(name, ev), [ name, validator ]);
+  
+  const onChange = useCallback(
+    (value: stripe.elements.ElementChangeResponse) => {
+      if (value !== null) {
+        if (value.error && value.error.message) {
+          validator.updateField({ name, value, error: value.error.message });
+        } else if (value.complete) {
+          validator.updateField({ name, value, valid: true });
+        }
+      }
+    },
+    [ name, validator ]
+  );
+
   const tooltipParentRef = useRef<any>(null);
+  const stripeElementRef = (el: any) => {
+    // HACK: Stripe elements stash their underlying DOM element in el._ref,
+    // but we need it for Tooltip positioning
+    if (el) tooltipParentRef.current = el._ref;
+  };
+  
   return (
     <Field {...{ fieldType: 'stripe', tooltipParentRef, name, tooltip, required, label, className }}>
       <StripeElementComponent {...{
         ...childProps,
-        ref: tooltipParentRef,
+        ref: stripeElementRef,
         onChange
       }} />
     </Field>
@@ -133,12 +175,27 @@ type CheckboxProps = FieldProps &
   React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement>;
 
 export const Checkbox = (props: CheckboxProps) => {
-  const { name, label, required = false, className='input-row input-row--checkbox', ...childProps } = props;
+  const {
+    name,
+    label,
+    required = false,
+    className='input-row input-row--checkbox',
+    ...childProps
+  } = props;
   const { validator } = useContext(FormContext) as FormContextValue;
+  
   const onChange = useCallback(
-    (ev) => validator.setValue(name, ev.target.checked),
+    (ev) => {
+      const value = ev.target.checked;
+      if (required && ! value) {
+        validator.updateField({ name, value, valid: false });
+      } else {
+        validator.updateField({ name, value, valid: true });
+      }
+    },
     [ name, validator ]
   );
+
   return (
     <Field {...{ fieldType: 'input', name, className, required, tooltip: false }}>
       <input {...{ ...childProps, type: 'checkbox', name, onChange, onBlur: onChange, }} />
@@ -148,7 +205,7 @@ export const Checkbox = (props: CheckboxProps) => {
 };
 
 type SubmitButtonProps = FieldProps &
-  { children: React.ReactNode } & 
+  { children: React.ReactNode } &
   React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>;
 
 export const SubmitButton = (props: SubmitButtonProps) => {
