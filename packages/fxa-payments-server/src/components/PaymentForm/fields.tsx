@@ -82,7 +82,7 @@ export const Field = ({
   );
 };
 
-type InputProps = 
+type InputProps =
   { validate?: (value: any) => { value: any, error: any } } &
   FieldProps &
   React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement>;
@@ -90,7 +90,7 @@ type InputProps =
 export const Input = (props: InputProps) => {
   const { validate, name, label, tooltip = true, required = false, className, ...childProps } = props;
   const { validator } = useContext(FormContext) as FormContextValue;
-  
+
   const onChange = useCallback(
     (ev) => {
       const { value } = ev.target;
@@ -107,7 +107,7 @@ export const Input = (props: InputProps) => {
   );
 
   const tooltipParentRef = useRef<HTMLInputElement>(null);
-  
+
   return (
     <Field {...{ fieldType: 'input', tooltipParentRef, name, tooltip, required, label, className }}>
       <input {...{
@@ -137,9 +137,9 @@ export const StripeElement = (props: StripeElementProps) => {
     className,
     ...childProps
   } = props;
-  
+
   const { validator } = useContext(FormContext) as FormContextValue;
-  
+
   const onChange = useCallback(
     (value: stripe.elements.ElementChangeResponse) => {
       if (value !== null) {
@@ -157,9 +157,11 @@ export const StripeElement = (props: StripeElementProps) => {
   const stripeElementRef = (el: any) => {
     // HACK: Stripe elements stash their underlying DOM element in el._ref,
     // but we need it for Tooltip positioning
-    if (el) tooltipParentRef.current = el._ref;
+    if (el) {
+      tooltipParentRef.current = el._ref;
+    }
   };
-  
+
   return (
     <Field {...{ fieldType: 'stripe', tooltipParentRef, name, tooltip, required, label, className }}>
       <StripeElementComponent {...{
@@ -183,7 +185,7 @@ export const Checkbox = (props: CheckboxProps) => {
     ...childProps
   } = props;
   const { validator } = useContext(FormContext) as FormContextValue;
-  
+
   const onChange = useCallback(
     (ev) => {
       const value = ev.target.checked;

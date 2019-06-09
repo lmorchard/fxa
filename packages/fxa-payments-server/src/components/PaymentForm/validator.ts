@@ -1,10 +1,8 @@
 import { useReducer, useMemo } from 'react';
 
-export const useFormValidator = (formReducer?: Reducer): Validator => {
-  const reducer = formReducer
-    ? (state: State, action: Action) => formReducer(baseReducer(state, action))
-    : baseReducer;
-  const [ state, dispatch ] = useReducer(reducer, initialState);
+export const useFormValidator = (): Validator => {
+  // TODO: Accept a reducer parameter to wrap baseReducer and enable overall form-level validation?
+  const [ state, dispatch ] = useReducer(baseReducer, initialState);
   return useMemo(
     () => new Validator(state, dispatch),
     [ state, dispatch ]
@@ -112,8 +110,6 @@ type Action =
   | { type: 'updateField', name: string, value: any, valid: boolean, error: any }
   | { type: 'setGlobalError', error: any }
   | { type: 'resetGlobalError' };
-
-type Reducer = (state: State) => State;
 
 type ActionReducer = (state: State, action: Action) => State;
 
