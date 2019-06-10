@@ -16,6 +16,7 @@ const availableRedirects: availableRedirectsType = {
   // Examples:
   // '123doneProProduct': React.lazy(() => import('./Redirect123donePro')),
   // '321doneProProduct': React.lazy(() => import('./Redirect321donePro')),
+  'plan_F4bof27uz71Vk7': React.lazy(() => import('./Redirect123DonePro')),
 };
 const defaultRedirect = React.lazy(() => import('./RedirectDefault'));
 

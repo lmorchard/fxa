@@ -1,8 +1,8 @@
 import { useReducer, useMemo } from 'react';
 
-export const useFormValidator = (): Validator => {
-  // TODO: Accept a reducer parameter to wrap baseReducer and enable overall form-level validation?
-  const [ state, dispatch ] = useReducer(baseReducer, initialState);
+export const useValidatorState = (): Validator => {
+  // TODO: Accept a reducer parameter to wrap actionReducer and enable overall form-level validation?
+  const [ state, dispatch ] = useReducer(mainReducer, initialState);
   return useMemo(
     () => new Validator(state, dispatch),
     [ state, dispatch ]
@@ -48,28 +48,29 @@ export class Validator {
     return this.dispatch({ type: 'updateField', name, value, valid, error });
   }
 
-  hasField(name: string) {
-    return name in this.state.fields;
-  }
-
-  getField(name: string) {
-    return this.state.fields[name] || {};
+  getFieldProp(
+    fieldName: string,
+    propName: FieldStateKeys,
+    defVal?: any
+  ) {
+    return (
+      fieldName in this.state.fields &&
+      propName in this.state.fields[fieldName]
+    )
+      ? this.state.fields[fieldName][propName]
+      : defVal;
   }
   
   getValue(name: string, defVal: any) {
-    return (this.hasField(name) && this.getField(name).value) || defVal;
+    return this.getFieldProp(name, 'value', defVal);
   }
 
   isInvalid(name: string) {
-    return this.hasField(name) && this.getField(name).valid === false;
-  }
-
-  hasError(name: string) {
-    return this.hasField(name) && !! this.getField(name).error;
+    return this.getFieldProp(name, 'valid') === false;
   }
 
   getError(name: string) {
-    return this.hasField(name) && this.getField(name).error;
+    return this.getFieldProp(name, 'error');
   }
 
   getGlobalError() {
@@ -91,7 +92,7 @@ type State = {
 };
 
 export type FieldType = 'input' | 'stripe';
-
+type FieldStateKeys = 'fieldType' | 'value' | 'required' | 'valid' | 'error';
 type FieldState = {
   fieldType: FieldType,
   value: any,
@@ -113,20 +114,7 @@ type Action =
 
 type ActionReducer = (state: State, action: Action) => State;
 
-const baseReducer: ActionReducer = (state, action) => {
-  state = actionReducer(state, action);
-  return state;
-};
-
-const setFieldState = (state: State, name: string, fn: (field: FieldState) => FieldState) => ({
-  ...state,
-  fields: {
-    ...state.fields,
-    [ name ]: fn(state.fields[name])
-  }
-});
-
-const actionReducer: ActionReducer = (state, action) => {
+const mainReducer: ActionReducer = (state, action) => {
   switch (action.type) {
     case 'registerField': {
       const { name, fieldType, required } = action;
@@ -146,5 +134,18 @@ const actionReducer: ActionReducer = (state, action) => {
       return ({ ...state, error: null });
     }
   }
+  console.log("STATE", JSON.stringify(state));
   return state;
 };
+
+const setFieldState = (
+  state: State,
+  name: string,
+  fn: (field: FieldState) => FieldState
+) => ({
+  ...state,
+  fields: {
+    ...state.fields,
+    [ name ]: fn(state.fields[name])
+  }
+});

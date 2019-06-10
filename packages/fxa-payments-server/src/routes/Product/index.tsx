@@ -100,9 +100,11 @@ export const Product = ({
     return <div>(plans error! {'' + plans.error})</div>;
   }
 
+  /*
   if (customer.error) {
     return <div>(customer error! {'' + customer.error})</div>;
   }
+  */
 
   if (createSubscriptionStatus.error) {
     return <div>
@@ -116,12 +118,12 @@ export const Product = ({
   }
 
   if (! selectedPlan) {
-    return <div>No plans available for this product.</div>;
+    return null; //<div>No plans available for this product.</div>;
   }
 
   // If the customer has any subscription plan that matches a plan for the
   // selected product, then they are already subscribed.
-  const customerIsSubscribed =
+  const customerIsSubscribed = ! customer.error &&
     customerSubscriptions.some(customerSubscription =>
       productPlans.some(plan =>
         plan.plan_id === customerSubscription.plan_id));

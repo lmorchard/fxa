@@ -14,8 +14,8 @@ type FormProps = {
 
 export const Form = (props: FormProps) => {
   const {
-    validator,
     children,
+    validator,
     ...formProps
   } = props;
   return (
@@ -75,7 +75,7 @@ export const Field = ({
       <label>
         {label && <span className="label-text">{label}</span>}
         {children}
-        {tooltip && tooltipParentRef && validator.hasError(name) &&
+        {tooltip && tooltipParentRef && validator.getError(name) &&
           <Tooltip parentRef={tooltipParentRef}>{validator.getError(name)}</Tooltip>}
       </label>
     </div>
@@ -137,7 +137,6 @@ export const StripeElement = (props: StripeElementProps) => {
     className,
     ...childProps
   } = props;
-
   const { validator } = useContext(FormContext) as FormContextValue;
 
   const onChange = useCallback(

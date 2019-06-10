@@ -8,7 +8,7 @@ import {
   ReactStripeElements
 } from 'react-stripe-elements';
 import { Form, FieldGroup, Input, StripeElement, SubmitButton, Checkbox } from '../../lib/fields';
-import { useFormValidator } from '../../lib/validator';
+import { useValidatorState } from '../../lib/validator';
 
 import './index.scss';
 
@@ -32,7 +32,7 @@ export const PaymentForm = ({
   onPaymentError,
   stripe,
 }: PaymentFormProps) => {
-  const validator = useFormValidator();
+  const validator = useValidatorState();
 
   const onSubmit = useCallback(ev => {
     ev.preventDefault();
@@ -46,10 +46,11 @@ export const PaymentForm = ({
   }, [ validator, onPayment, onPaymentError, stripe ]);
 
   return (
-    <Form validator={validator} onSubmit={onSubmit} className="payment">
+    <Form data-testid="paymentForm" validator={validator} onSubmit={onSubmit} className="payment">
       <h3><span>Billing information</span></h3>
 
       <Input type="text" name="name" label="Name as it appears on your card"
+        data-testid="name"
         required autoFocus spellCheck={false} 
         validate={value => {
           let error = null;
@@ -75,6 +76,7 @@ export const PaymentForm = ({
           style={STRIPE_ELEMENT_STYLES} required />
 
         <Input type="number" name="zip" label="Zip Code" maxLength={5} required
+          data-testid="zip"
           validate={value => {
             let error = null;
             if (value !== null) {

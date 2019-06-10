@@ -13,6 +13,7 @@ const availableDetails: availableDetailsType = {
   // Examples:
   // '123doneProProduct': React.lazy(() => import('./Details123donePro')),
   // '321doneProProduct': React.lazy(() => import('./Details321donePro')),
+  'plan_F4bof27uz71Vk7': React.lazy(() => import('./Details123DonePro')),
 };
 const defaultDetails = React.lazy(() => import('./DetailsDefault'));
 
