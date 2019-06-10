@@ -36,7 +36,7 @@ export const PaymentForm = ({
 
   const onSubmit = useCallback(ev => {
     ev.preventDefault();
-    const { name, zip } = validator.getFields();
+    const { name, zip } = validator.getValues();
     if (stripe) {
       stripe
         .createToken({ name, address_zip: zip })

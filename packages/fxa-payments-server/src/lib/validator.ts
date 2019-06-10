@@ -18,7 +18,7 @@ export class Validator {
     this.dispatch = dispatch;
   }
 
-  getFields(): { [name: string]: any } {
+  getValues(): { [name: string]: any } {
     return Object
       .entries(this.state.fields)
       .reduce((acc, [ name, field ]) => ({ ...acc, [ name ]: field.value }), {});
@@ -48,6 +48,10 @@ export class Validator {
     return this.dispatch({ type: 'updateField', name, value, valid, error });
   }
 
+  getFieldState(fieldName: string) {
+    return this.state.fields[fieldName];
+  }
+
   getFieldProp(
     fieldName: string,
     propName: FieldStateKeys,
@@ -55,13 +59,14 @@ export class Validator {
   ) {
     return (
       fieldName in this.state.fields &&
-      propName in this.state.fields[fieldName]
+      propName in this.state.fields[fieldName] &&
+      this.state.fields[fieldName][propName] !== null
     )
       ? this.state.fields[fieldName][propName]
       : defVal;
   }
   
-  getValue(name: string, defVal: any) {
+  getValue(name: string, defVal?: any) {
     return this.getFieldProp(name, 'value', defVal);
   }
 
@@ -81,7 +86,7 @@ export class Validator {
     this.dispatch({ type: 'setGlobalError', error });
   }
 
-  resetGlobalError(error: any) {
+  resetGlobalError() {
     this.dispatch({ type: 'resetGlobalError' });
   }
 }
