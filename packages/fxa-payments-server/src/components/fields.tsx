@@ -1,10 +1,10 @@
 import React, { useContext, useCallback, useRef, useEffect, DetailedHTMLProps, FormHTMLAttributes } from 'react';
 import { ReactStripeElements } from 'react-stripe-elements';
 import classNames from 'classnames';
-import { Validator, FieldType } from './validator';
-import Tooltip from '../components/Tooltip';
+import { Validator, FieldType } from '../lib/validator';
+import Tooltip from './Tooltip';
 
-type FormContextValue = { validator: Validator };
+export type FormContextValue = { validator: Validator };
 export const FormContext = React.createContext<FormContextValue | null>(null);
 
 type FormProps = {
