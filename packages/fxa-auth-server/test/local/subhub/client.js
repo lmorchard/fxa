@@ -122,7 +122,7 @@ describe('subhub client', () => {
           current_period_start: 1557161022,
           current_period_end: 1557361022,
           ended_at: null,
-          nickname: 'Example',
+          plan_name: 'Example',
           plan_id: 'firefox_pro_basic_823',
           status: 'active',
           subscription_id: 'sub_8675309'

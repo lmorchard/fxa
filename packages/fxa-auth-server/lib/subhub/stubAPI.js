@@ -55,7 +55,7 @@ const ONE_MONTH = 30 * 24 * 60 * 60 * 1000;
       storage.subscriptions[key] = {
         subscription_id,
         plan_id,
-        nickname: plan_name,
+        plan_name,
         status: 'active',
         current_period_start: now,
         current_period_end: now + ONE_MONTH,
