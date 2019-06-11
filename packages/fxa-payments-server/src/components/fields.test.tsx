@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useContext, useRef } from 'react';
 import { render, cleanup, fireEvent, prettyDOM } from '@testing-library/react';
 import 'jest-dom/extend-expect';
-import { FieldGroup, Form, FormContext, FormContextValue, Field } from './fields';
+import { ReactStripeElements } from 'react-stripe-elements';
+import { FieldGroup, Form, FormContext, FormContextValue, Field, Input, StripeElement, SubmitButton, Checkbox } from './fields';
 import { useValidatorState, Validator } from '../lib/validator';
 
 afterEach(cleanup);
@@ -14,9 +15,8 @@ describe('Form', () => {
       </TestForm>
     );
     expect(container.querySelector('form')).not.toBeNull();
-    expect(getByTestId('validator').textContent).toEqual(JSON.stringify(
-      { "error": null, "fields": {} }
-    ));
+    expect(parseEl(getByTestId('validator')))
+      .toEqual({ "error": null, "fields": {} });
   });
 });
 
@@ -91,21 +91,270 @@ describe('Field', () => {
 });
 
 describe('Input', () => {
-  it.todo('accepts a function to validate its value on change');
-  it.todo('enforces required fields');
+  it('enforces non-empty content in required fields', () => {
+    const { getByTestId } = render(
+      <TestForm>
+        <Input data-testid="input-1" type="text" name="input-1" required initialValue="bar" />
+        <Input data-testid="input-2" type="text" name="input-2" required />
+        <TestValidatorState />
+      </TestForm>
+    );
+    
+    fireEvent.change(getByTestId('input-1'), { target: { value: '' } });
+    fireEvent.blur(getByTestId('input-2'));
+
+    const validatorState = parseEl(getByTestId('validator'));
+    expect(validatorState).toEqual({
+      'error': null,
+      'fields': {
+        'input-1': {
+          'fieldType': 'input',
+          'required': true,
+          'value': '',
+          'valid': true,
+          'error': 'This field is required'
+        },
+        'input-2': {
+          'fieldType': 'input',
+          'required': true,
+          'value': '',
+          'valid': true,
+          'error': 'This field is required'
+        }
+      }
+    });
+  });
+
+  it('accepts a function to validate on change', () => {
+    const validate = jest.fn((value: string) => {
+      return {
+        value: `bar ${value}`,
+        error: 'bad thing'
+      };
+    });
+
+    const { getByTestId } = render(
+      <TestForm>
+        <Input data-testid="testInput" type="text" name="foo" validate={validate} />
+        <TestValidatorState />
+      </TestForm>
+    );
+    
+    fireEvent.change(
+      getByTestId('testInput'),
+      { target: { value: 'xyzzy' } }
+    );
+    
+    expect(validate).toBeCalledWith('xyzzy');
+
+    const validatorState = parseEl(getByTestId('validator'));
+    expect(validatorState).toEqual({
+      error: null,
+      fields: {
+        foo: {
+          fieldType: 'input',
+          required: false,
+          // validate function can alter value
+          value: 'bar xyzzy',
+          // validate function can set error and valid state
+          valid: false,
+          error: 'bad thing'
+        }
+      }
+    });
+  });
+
+  it('adds an "invalid" class name when invalid', () => {
+    const validate = (value: string) => ({ value: 'bar', error: 'bad thing' });
+    const { container, getByTestId } = render(
+      <TestForm>
+        <Input data-testid="testInput" type="text" name="foo" validate={validate} />
+        <TestValidatorState />
+      </TestForm>
+    );    
+    fireEvent.change(getByTestId('testInput'), { target: { value: 'xyzzy' } });
+    expect(container.querySelector('input.invalid')).not.toBeNull();
+  });
 });
 
 describe('StripeElement', () => {
-  it.todo('handles self-validation by contained stripe element');
-  it.todo('uses _ref as the tooltip parent reference');
+  type MockStripeElementProps = {
+    id?: string,
+    className?: string,
+    onChange: Function,
+    onBlur: Function,
+    onFocus: Function,
+    onReady: Function,
+  };
+
+  const buildMockStripeElement = (value: any) => (
+    class extends React.Component<MockStripeElementProps> {
+      constructor(props: MockStripeElementProps) {
+        super(props);
+      }
+      handleClick = (ev: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+        ev.preventDefault();
+        this.props.onChange(value);
+      };
+      render() {
+        return <button data-testid="mockStripe" onClick={this.handleClick} />
+      }
+    }
+  );
+
+  it('handles error result from contained stripe element', () => {
+    const MockStripeElement = buildMockStripeElement({
+      error: { message: 'game over man' }
+    });
+    const { container, getByTestId } = render(
+      <TestForm>
+        <StripeElement name="input-1" component={MockStripeElement} />
+        <TestValidatorState />
+      </TestForm>
+    );
+
+    fireEvent.click(getByTestId('mockStripe'));
+
+    const tooltipEl = container.querySelector('aside.tooltip');
+    expect(tooltipEl).not.toBeNull();
+    if (tooltipEl) {
+      expect(tooltipEl.textContent).toContain('game over man');
+    }
+
+    const validatorState = parseEl(getByTestId('validator'));
+    expect(validatorState).toEqual({
+      error: null,
+      fields: {
+        'input-1': {
+          fieldType: 'stripe',
+          required: false,
+          value: {
+            error: {
+              message: 'game over man'
+            }
+          },
+          valid: false,
+          error: 'game over man'
+        }
+      }
+    });
+  });
+
+  it('handles complete result from contained stripe element', () => {
+    const MockStripeElement = buildMockStripeElement({ complete: true });
+    const { container, getByTestId } = render(
+      <TestForm>
+        <StripeElement name="input-1" component={MockStripeElement} />
+        <TestValidatorState />
+      </TestForm>
+    );
+
+    fireEvent.click(getByTestId('mockStripe'));
+
+    const tooltipEl = container.querySelector('aside.tooltip');
+    expect(tooltipEl).toBeNull();
+
+    const validatorState = parseEl(getByTestId('validator'));
+    expect(validatorState).toEqual({
+      error: null,
+      fields: {
+        'input-1': {
+          fieldType: 'stripe',
+          required: false,
+          value: { complete: true },
+          valid: true,
+          error: null
+        }
+      }
+    });
+  });
 });
 
 describe('Checkbox', () => {
-  it.todo('must be checked to be valid when required');
+  it('renders its own label', () => {
+    const Subject = () => {
+      return (
+        <TestForm>
+          <Checkbox name="foo" label="nice label" />
+        </TestForm>
+      );
+    };
+    const { container } = render(<Subject />);
+    const label = container.querySelector('span.label-text.checkbox');
+    expect(label).not.toBeNull();
+    if (label) {
+      expect(label.textContent).toContain('nice label');
+    }
+  });
+
+  it('must be checked to be valid when required', () => {
+    const Subject = () => {
+      return (
+        <TestForm>
+          <Checkbox data-testid="checkbox" name="foo" required />
+          <TestValidatorState />
+        </TestForm>
+      );
+    };
+    const { getByTestId } = render(<Subject />);
+
+    const checkbox = getByTestId('checkbox');
+    
+    fireEvent.click(checkbox);
+    expect(parseEl(getByTestId('validator'))).toEqual({
+      "error": null,
+      "fields": {
+        "foo": {
+          "fieldType": "input",
+          "required": true,
+          "value": true,
+          "valid": true,
+          "error": null
+        }
+      }
+    });
+    
+    fireEvent.click(checkbox);
+    expect(parseEl(getByTestId('validator'))).toEqual({
+      "error": null,
+      "fields": {
+        "foo": {
+          "fieldType": "input",
+          "required": true,
+          "value": false,
+          "valid": false,
+          "error": null
+        }
+      }
+    });
+  });
 });
 
 describe('SubmitButton', () => {
-  it.todo('is disabled if all fields are not valid');
+  it('is disabled if all required fields are not valid', () => {
+    const Subject = () => {
+      return (
+        <TestForm>
+          <SubmitButton data-testid="submit" name="submit">Submit</SubmitButton>
+          <Input name="foo" required />
+          <TestValidatorFn fn={validator => {
+            validator.updateField({ name: 'foo', value: 'bar', valid: false, error: 'This is an error' })
+          }} />
+          <TestValidatorFn fn={validator => {
+            validator.updateField({ name: 'foo', value: 'baz', valid: true })
+          }} />
+        </TestForm>
+      );
+    };
+    const { queryAllByTestId, getByTestId } = render(<Subject />);
+    const validatorFns = queryAllByTestId('execute');
+
+    fireEvent.click(validatorFns[0]);
+    expect(getByTestId('submit')).toHaveAttribute('disabled');
+
+    fireEvent.click(validatorFns[1]);
+    expect(getByTestId('submit')).not.toHaveAttribute('disabled');
+  });
 });
 
 const parseEl = ({ textContent }: HTMLElement) =>

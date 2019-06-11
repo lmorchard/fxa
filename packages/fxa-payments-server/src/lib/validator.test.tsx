@@ -6,16 +6,25 @@ import { useValidatorState, Validator } from './validator';
 afterEach(cleanup);
 
 it('supports registering a field', () => {
-  const { results } = runAgainstValidator(
+  const { state } = runAgainstValidator(
     v => v.registerField({ name: 'foo', fieldType: 'input', required: true }),
-    v => v.getFieldState('foo'),
+    v => v.registerField({ name: 'bar', fieldType: 'input', required: false, initialValue: 'baz' }),
   );
-  expect(results.pop()).toEqual({
-    fieldType: 'input',
-    required: true,
-    value: null,
-    valid: null,
-    error: null
+  expect(state.fields).toEqual({
+    foo: {
+      fieldType: 'input',
+      required: true,
+      value: null,
+      valid: null,
+      error: null
+    },
+    bar: {
+      fieldType: 'input',
+      required: false,
+      value: 'baz',
+      valid: null,
+      error: null
+    },
   });
 });
 

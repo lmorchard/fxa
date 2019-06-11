@@ -32,10 +32,10 @@ export class Validator {
   }
 
   registerField(
-    { name, fieldType, required}:
-    { name: string, fieldType: FieldType, required: boolean}
+    { name, initialValue = null, fieldType, required }:
+    { name: string, initialValue?: any, fieldType: FieldType, required: boolean}
   ) {
-    this.dispatch({ type: 'registerField', name, fieldType, required });
+    this.dispatch({ type: 'registerField', name, initialValue, fieldType, required });
   }
 
   updateField(
@@ -112,7 +112,7 @@ const initialState: State = {
 };
 
 type Action =
-  | { type: 'registerField', name: string, fieldType: FieldType, required: boolean }
+  | { type: 'registerField', name: string, fieldType: FieldType, required: boolean, initialValue?: any }
   | { type: 'updateField', name: string, value: any, valid: boolean, error: any }
   | { type: 'setGlobalError', error: any }
   | { type: 'resetGlobalError' };
@@ -122,9 +122,9 @@ type ActionReducer = (state: State, action: Action) => State;
 const mainReducer: ActionReducer = (state, action) => {
   switch (action.type) {
     case 'registerField': {
-      const { name, fieldType, required } = action;
+      const { name, fieldType, required, initialValue = null } = action;
       return setFieldState(state, name, () =>
-        ({ fieldType, required, value: null, valid: null, error: null }));
+        ({ fieldType, required, value: initialValue, valid: null, error: null }));
     }
     case 'updateField': {
       const { name, value, valid, error } = action;

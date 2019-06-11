@@ -7,7 +7,7 @@ import {
   Elements,
   ReactStripeElements
 } from 'react-stripe-elements';
-import { Form, FieldGroup, Input, StripeElement, SubmitButton, Checkbox } from '../../lib/fields';
+import { Form, FieldGroup, Input, StripeElement, SubmitButton, Checkbox } from '../fields';
 import { useValidatorState } from '../../lib/validator';
 
 import './index.scss';

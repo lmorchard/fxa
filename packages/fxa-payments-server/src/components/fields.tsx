@@ -37,6 +37,7 @@ export const FieldGroup = ({ children }: FieldGroupProps) => (
 
 type FieldProps = {
   name: string,
+  initialValue?: any,
   tooltip?: boolean,
   required?: boolean,
   label?: string | React.ReactNode,
@@ -53,6 +54,7 @@ export const Field = ({
   tooltipParentRef,
   fieldType,
   name,
+  initialValue = null,
   tooltip = true,
   required = false,
   label,
@@ -65,7 +67,7 @@ export const Field = ({
   // instance, so including validator in list of deps causes an infinite loop
   /* eslint-disable react-hooks/exhaustive-deps */
   useEffect(
-    () => validator.registerField({ name, required, fieldType }),
+    () => validator.registerField({ name, initialValue, required, fieldType }),
     [ name, required, fieldType ]
   );
   /* eslint-enable react-hooks/exhaustive-dep */
@@ -83,12 +85,23 @@ export const Field = ({
 };
 
 type InputProps =
-  { validate?: (value: any) => { value: any, error: any } } &
-  FieldProps &
-  React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement>;
+  & { 
+    validate?: (value: any) => { value: any, error: any },
+  }
+  & FieldProps
+  & React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement>;
 
 export const Input = (props: InputProps) => {
-  const { validate, name, label, tooltip = true, required = false, className, ...childProps } = props;
+  const {
+    validate,
+    name,
+    initialValue, 
+    label, 
+    tooltip = true, 
+    required = false, 
+    className, 
+    ...childProps 
+  } = props;
   const { validator } = useContext(FormContext) as FormContextValue;
 
   const onChange = useCallback(
@@ -109,7 +122,7 @@ export const Input = (props: InputProps) => {
   const tooltipParentRef = useRef<HTMLInputElement>(null);
 
   return (
-    <Field {...{ fieldType: 'input', tooltipParentRef, name, tooltip, required, label, className }}>
+    <Field {...{ fieldType: 'input', tooltipParentRef, name, initialValue, tooltip, required, label, className }}>
       <input {...{
         ...childProps,
         ref: tooltipParentRef,
@@ -143,7 +156,7 @@ export const StripeElement = (props: StripeElementProps) => {
     (value: stripe.elements.ElementChangeResponse) => {
       if (value !== null) {
         if (value.error && value.error.message) {
-          validator.updateField({ name, value, error: value.error.message });
+          validator.updateField({ name, value, valid: false, error: value.error.message });
         } else if (value.complete) {
           validator.updateField({ name, value, valid: true });
         }
