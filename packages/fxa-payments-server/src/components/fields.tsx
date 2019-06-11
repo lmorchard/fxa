@@ -7,6 +7,9 @@ import Tooltip from './Tooltip';
 export type FormContextValue = { validator: Validator };
 export const FormContext = React.createContext<FormContextValue | null>(null);
 
+export type ValidationFunction =
+  (value: any) => ({ value: any, error: any });
+
 type FormProps = {
   children: React.ReactNode,
   validator: Validator,
@@ -85,9 +88,7 @@ export const Field = ({
 };
 
 type InputProps =
-  & { 
-    validate?: (value: any) => { value: any, error: any },
-  }
+  & { validate?: ValidationFunction }
   & FieldProps
   & React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, HTMLInputElement>;
 

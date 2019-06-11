@@ -139,7 +139,6 @@ const mainReducer: ActionReducer = (state, action) => {
       return ({ ...state, error: null });
     }
   }
-  console.log("STATE", JSON.stringify(state));
   return state;
 };
 

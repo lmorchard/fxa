@@ -36,6 +36,9 @@ export const PaymentForm = ({
 
   const onSubmit = useCallback(ev => {
     ev.preventDefault();
+    if (! validator.allValid()) {
+      return;
+    }
     const { name, zip } = validator.getValues();
     if (stripe) {
       stripe
