@@ -3732,5 +3732,73 @@ form.payment {
       margin: 0 8px;
       width: 14px; }
 
+.product-payment .account-activated {
+  margin-bottom: 25px; }
+  .product-payment .account-activated h2 {
+    color: #20123b;
+    font-size: 24px;
+    font-weight: 500;
+    margin: 10px 0; }
+
+.product-payment .profile-banner {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 25px;
+  text-align: center; }
+  .product-payment .profile-banner img.avatar {
+    background-color: #c3cfd8;
+    border-radius: 42px;
+    display: block;
+    height: 84px;
+    width: 84px; }
+  .product-payment .profile-banner img.avatar.hoisted {
+    margin-top: -92px;
+    z-index: 999; }
+  .product-payment .profile-banner h2.displayName {
+    margin: 0; }
+  .product-payment .profile-banner h3.email {
+    font-weight: normal;
+    line-height: 14px;
+    margin: 0;
+    padding: 0; }
+
+.product-payment .plan-details {
+  margin: 25px 0; }
+  .product-payment .plan-details h2 {
+    font-size: 18px;
+    margin: 0; }
+  .product-payment .plan-details p {
+    font-size: 18px;
+    margin: 0; }
+  .product-payment .plan-details ul {
+    display: flex;
+    flex-direction: row;
+    list-style-type: none;
+    margin: 4px 0;
+    padding: 0; }
+    .product-payment .plan-details ul li {
+      color: #737373;
+      font-size: 16px;
+      line-height: 1.5;
+      margin: 0 20px; }
+    .product-payment .plan-details ul li:first-child {
+      margin-left: 0; }
+    .product-payment .plan-details ul li:last-child {
+      margin-right: 0; }
+
+.product-payment .subscription-ready h2 {
+  color: #20123b;
+  font-size: 24px;
+  font-weight: 500; }
+
+.product-payment .subscription-ready p {
+  color: #0c0c0d;
+  font-size: 16px;
+  margin: 20px 100px; }
+
+.product-payment .subscription-ready a {
+  font-size: 16px; }
+
 
 /*# sourceMappingURL=main.css.map*/
