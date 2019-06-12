@@ -1,0 +1,20 @@
+{
+  "files": {
+    "main.css": "http://127.0.0.1:3031/main.css",
+    "main.js": "http://127.0.0.1:3031/main.4a44433bea3210c4840b.bundle.js",
+    "main.css.map": "http://127.0.0.1:3031/main.css.map",
+    "main.js.map": "http://127.0.0.1:3031/main.4a44433bea3210c4840b.bundle.js.map",
+    "runtime~main.js": "http://127.0.0.1:3031/runtime~main.4a44433bea3210c4840b.bundle.js",
+    "runtime~main.js.map": "http://127.0.0.1:3031/runtime~main.4a44433bea3210c4840b.bundle.js.map",
+    "vendors~main.js": "http://127.0.0.1:3031/vendors~main.4a44433bea3210c4840b.bundle.js",
+    "vendors~main.js.map": "http://127.0.0.1:3031/vendors~main.4a44433bea3210c4840b.bundle.js.map",
+    "3.4a44433bea3210c4840b.bundle.js": "http://127.0.0.1:3031/3.4a44433bea3210c4840b.bundle.js",
+    "3.4a44433bea3210c4840b.bundle.js.map": "http://127.0.0.1:3031/3.4a44433bea3210c4840b.bundle.js.map",
+    "4.4a44433bea3210c4840b.bundle.js": "http://127.0.0.1:3031/4.4a44433bea3210c4840b.bundle.js",
+    "4.4a44433bea3210c4840b.bundle.js.map": "http://127.0.0.1:3031/4.4a44433bea3210c4840b.bundle.js.map",
+    "iframe.html": "http://127.0.0.1:3031/iframe.html",
+    "precache-manifest.5136b9649ff31585367e6fdb0854d095.js": "http://127.0.0.1:3031/precache-manifest.5136b9649ff31585367e6fdb0854d095.js",
+    "service-worker.js": "http://127.0.0.1:3031/service-worker.js",
+    "static/media/index.scss": "http://127.0.0.1:3031/static/media/mozilla.c86df1d3.svg"
+  }
+}
