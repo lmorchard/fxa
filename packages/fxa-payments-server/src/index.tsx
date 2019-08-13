@@ -1,9 +1,11 @@
 import React from 'react';
 import { render } from 'react-dom';
-import { createAppStore, actions } from './store';
 import * as Sentry from '@sentry/browser';
 
 import { config, readConfigFromMeta } from './lib/config';
+import { createAppStore, actions } from './store';
+import { AsyncThunkCreator, ThunkResult } from './store/types';
+
 import './index.scss';
 import App from './App';
 import ScreenInfo from './lib/screen-info';
@@ -26,9 +28,8 @@ async function init() {
   // We should have gotten an accessToken or else redirected, but guard here
   // anyway because App component requires a token.
   if (accessToken) {
-    [actions.fetchToken(accessToken), actions.fetchProfile(accessToken)].map(
-      store.dispatch
-    );
+    store.dispatch(actions.fetchToken(accessToken) as ThunkResult<Promise<void>>);
+    store.dispatch(actions.fetchProfile(accessToken) as ThunkResult<Promise<void>>);
 
     render(
       <App

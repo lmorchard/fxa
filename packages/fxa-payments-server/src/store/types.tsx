@@ -1,3 +1,10 @@
+import { Store as ReduxStore } from 'redux';
+import {
+  ThunkAction,
+  ThunkDispatch,
+  ThunkMiddleware,
+} from 'redux-thunk';
+
 import { APIError } from './utils';
 
 export interface Profile {
@@ -130,10 +137,14 @@ export interface AsyncThunk {
   (dispatch: Function, getState: Function): Promise<void>;
 }
 
-export interface AsyncThunkCreator {
-  (...args: any): AsyncThunk;
-}
+export type AsyncThunkCreator = (...params: any) => ThunkAction<Promise<void>, State, undefined, Action>;
+
+export type ThunkResult<R> = ThunkAction<R, State, undefined, Action>;
 
 export interface ActionCreators {
   [propName: string]: ActionCreator | AsyncThunkCreator;
 }
+
+export type AnyAction = Action | AsyncThunk;
+
+export type Store = ReduxStore<State, AnyAction>;

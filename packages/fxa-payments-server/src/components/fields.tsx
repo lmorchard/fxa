@@ -68,12 +68,12 @@ export const Field = ({
 
   // Disabling lint rule because registering a field changes the validator
   // instance, so including validator in list of deps causes an infinite loop
-  /* eslint-disable react-hooks/exhaustive-deps */
+  /* slint-disable react-hooks/exhaustive-deps */
   useEffect(
     () => validator.registerField({ name, initialValue, required, fieldType }),
     [name, required, fieldType]
   );
-  /* eslint-enable react-hooks/exhaustive-dep */
+  /* slint-enable react-hooks/exhaustive-dep */
 
   return (
     <div className={className}>
