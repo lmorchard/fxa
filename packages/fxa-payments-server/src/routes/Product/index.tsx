@@ -1,39 +1,22 @@
-import React, { useEffect, useState, useCallback, useContext } from 'react';
-import { connect } from 'react-redux';
+import React, {
+  useEffect,
+  useState,
+  useCallback,
+  useContext,
+  useMemo,
+} from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { AuthServerErrno, getErrorMessage } from '../../lib/errors';
-import {
-  fetchProductRouteResources,
-  createSubscriptionAndRefresh,
-} from '../../store/thunks';
-import {
-  resetCreateSubscription,
-  createSubscriptionMounted,
-  createSubscriptionEngaged,
-} from '../../store/actions';
+import * as thunks from '../../store/thunks';
+import * as actions from '../../store/actions';
+import * as selectors from '../../store/selectors';
+import { Profile } from '../../store/types';
 import { AppContext } from '../../lib/AppContext';
 import FlowEvent from '../../lib/flow-event';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { State as ValidatorState } from '../../lib/validator';
 
-import {
-  customer,
-  customerSubscriptions,
-  profile,
-  plans,
-  createSubscriptionStatus,
-  plansByProductId,
-} from '../../store/selectors';
-
-import {
-  State,
-  Plan,
-  Profile,
-  CustomerFetchState,
-  CustomerSubscription,
-  PlansFetchState,
-  CreateSubscriptionFetchState,
-  ProfileFetchState,
-} from '../../store/types';
+import { wrapFn } from '../../lib/utils';
 
 import './index.scss';
 
@@ -49,38 +32,14 @@ export type ProductProps = {
       productId: string;
     };
   };
-  profile: ProfileFetchState;
-  plans: PlansFetchState;
-  customer: CustomerFetchState;
-  customerSubscriptions: Array<CustomerSubscription> | null;
-  createSubscriptionStatus: CreateSubscriptionFetchState;
-  plansByProductId: (id: string) => Array<Plan>;
-  createSubscription: Function;
-  resetCreateSubscription: () => void;
-  resetCreateSubscriptionError: () => void;
-  fetchProductRouteResources: Function;
   validatorInitialState?: ValidatorState;
-  createSubscriptionMounted: Function;
-  createSubscriptionEngaged: Function;
 };
 
 export const Product = ({
   match: {
     params: { productId },
   },
-  profile,
-  plans,
-  customer,
-  customerSubscriptions,
-  createSubscriptionStatus,
-  plansByProductId,
-  createSubscription,
-  resetCreateSubscription,
-  resetCreateSubscriptionError,
-  fetchProductRouteResources,
   validatorInitialState,
-  createSubscriptionMounted,
-  createSubscriptionEngaged,
 }: ProductProps) => {
   const { config, locationReload, queryParams } = useContext(AppContext);
 
@@ -88,6 +47,32 @@ export const Product = ({
     plan: planId = '',
     activated: accountActivated = false,
   } = queryParams;
+
+  const customer = useSelector(selectors.customer);
+  const customerSubscriptions = useSelector(selectors.customerSubscriptions);
+  const profile = useSelector(selectors.profile);
+  const plans = useSelector(selectors.plans);
+  const createSubscriptionStatus = useSelector(
+    selectors.createSubscriptionStatus
+  );
+  const plansByProductId = useSelector(selectors.plansByProductId);
+
+  const dispatch = useDispatch();
+  const [
+    createSubscription,
+    resetCreateSubscriptionError,
+    createSubscriptionEngaged,
+    createSubscriptionMounted,
+  ] = useMemo(
+    // TODO: Find a typescript-safe way to DRY this up - .map() doesn't work.
+    () => [
+      wrapFn(dispatch, thunks.createSubscriptionAndRefresh),
+      wrapFn(dispatch, actions.resetCreateSubscription),
+      wrapFn(dispatch, actions.createSubscriptionMounted),
+      wrapFn(dispatch, actions.createSubscriptionEngaged),
+    ],
+    [dispatch]
+  );
 
   // There is no way to do this with a React Hook. We need the
   // `navigationTiming.domComplete` value to calculate the "client" perf metric.
@@ -101,15 +86,11 @@ export const Product = ({
     error: false,
   });
 
-  // Fetch plans on initial render, change in product ID, or auth change.
+  // Fetch plans & reset subscription creation status on initial render.
   useEffect(() => {
-    fetchProductRouteResources();
-  }, [fetchProductRouteResources]);
-
-  // Reset subscription creation status on initial render.
-  useEffect(() => {
-    resetCreateSubscription();
-  }, [resetCreateSubscription]);
+    dispatch(actions.resetCreateSubscription());
+    dispatch(thunks.fetchProductRouteResources());
+  }, [dispatch]);
 
   // Figure out a selected plan for product, either from query param or first plan.
   const productPlans = plansByProductId(productId);
@@ -331,21 +312,4 @@ const AccountActivatedBanner = ({
   </div>
 );
 
-export default connect(
-  (state: State) => ({
-    customer: customer(state),
-    customerSubscriptions: customerSubscriptions(state),
-    profile: profile(state),
-    plans: plans(state),
-    createSubscriptionStatus: createSubscriptionStatus(state),
-    plansByProductId: plansByProductId(state),
-  }),
-  {
-    resetCreateSubscription: resetCreateSubscription,
-    resetCreateSubscriptionError: resetCreateSubscription,
-    fetchProductRouteResources,
-    createSubscription: createSubscriptionAndRefresh,
-    createSubscriptionMounted,
-    createSubscriptionEngaged,
-  }
-)(Product);
+export default Product;

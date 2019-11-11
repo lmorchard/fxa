@@ -1,8 +1,12 @@
 import React, { useEffect, useMemo, ReactNode } from 'react';
+import { Provider as ReduxProvider } from 'react-redux';
 import { action } from '@storybook/addon-actions';
 import { StripeProvider } from 'react-stripe-elements';
 import { MockLoader } from './MockLoader';
 import { AppContext, AppContextType } from '../../src/lib/AppContext';
+import { createAppStore } from '../../src/store';
+import { defaultState } from '../../src/store/reducers';
+import { Store, State } from '../../src/store/types';
 import { config } from '../../src/lib/config';
 import ScreenInfo from '../../src/lib/screen-info';
 
@@ -14,6 +18,8 @@ declare global {
 
 type MockAppProps = {
   children: ReactNode;
+  initialState?: State;
+  storeEnhancers?: Array<any>;
   appContextValue?: AppContextType;
   stripeApiKey?: string;
   applyStubsToStripe?: (orig: stripe.Stripe) => stripe.Stripe;
@@ -61,7 +67,14 @@ export const MockApp = ({
   stripeApiKey = '8675309',
   applyStubsToStripe = defaultStripeStubs,
   appContextValue = defaultAppContextValue,
+  initialState = defaultState,
+  storeEnhancers,
 }: MockAppProps) => {
+  const store = useMemo<Store>(
+    () => createAppStore(initialState, storeEnhancers),
+    [initialState, storeEnhancers]
+  );
+
   const mockStripe = useMemo<stripe.Stripe>(
     () => applyStubsToStripe(window.Stripe(stripeApiKey)),
     [stripeApiKey, applyStubsToStripe]
@@ -77,11 +90,13 @@ export const MockApp = ({
   }, []);
 
   return (
-    <StripeProvider stripe={mockStripe}>
-      <AppContext.Provider value={appContextValue}>
-        <MockLoader>{children}</MockLoader>
-      </AppContext.Provider>
-    </StripeProvider>
+    <ReduxProvider store={store}>
+      <StripeProvider stripe={mockStripe}>
+        <AppContext.Provider value={appContextValue}>
+          <MockLoader>{children}</MockLoader>
+        </AppContext.Provider>
+      </StripeProvider>
+    </ReduxProvider>
   );
 };
 

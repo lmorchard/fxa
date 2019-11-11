@@ -57,7 +57,7 @@ export function updateAPIClientToken(token: string) {
   accessToken = token;
 }
 
-async function apiFetch(
+export async function apiFetchOrigImpl(
   method: string,
   path: string,
   options: APIFetchOptions = {}
@@ -84,6 +84,14 @@ async function apiFetch(
     throw new APIError(body, response);
   }
   return response.json();
+}
+
+let apiFetch = apiFetchOrigImpl;
+
+export function updateAPIClientFetchImpl(
+  newFetchImpl: typeof apiFetchOrigImpl
+) {
+  apiFetch = newFetchImpl;
 }
 
 export function apiFetchProfile() {

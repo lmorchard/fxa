@@ -1,7 +1,6 @@
 import typeToReducer from 'type-to-reducer';
 import { fetchReducer, setStatic, fetchDefault } from './utils';
 import { State } from './types';
-
 import {
   fetchProfile,
   fetchToken,
