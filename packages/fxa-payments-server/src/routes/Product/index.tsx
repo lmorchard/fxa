@@ -15,19 +15,7 @@ import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { State as ValidatorState } from '../../lib/validator';
 
 import * as selectors from '../../store/selectors';
-import {
-  CustomerSubscriptionsSelected,
-  PlansByProductIdSelected,
-} from '../../store/selectors';
-
-import {
-  State,
-  Profile,
-  CustomerFetchState,
-  PlansFetchState,
-  CreateSubscriptionFetchState,
-  ProfileFetchState,
-} from '../../store/types';
+import { Profile } from '../../store/types';
 
 import './index.scss';
 
@@ -59,20 +47,14 @@ export const Product = ({
     activated: accountActivated = false,
   } = queryParams;
 
-  const customer = useSelector<State, CustomerFetchState>(selectors.customer);
-  const customerSubscriptions = useSelector<
-    State,
-    CustomerSubscriptionsSelected
-  >(selectors.customerSubscriptions);
-  const profile = useSelector<State, ProfileFetchState>(selectors.profile);
-  const plans = useSelector<State, PlansFetchState>(selectors.plans);
-  const createSubscriptionStatus = useSelector<
-    State,
-    CreateSubscriptionFetchState
-  >(selectors.createSubscriptionStatus);
-  const plansByProductId = useSelector<State, PlansByProductIdSelected>(
-    selectors.plansByProductId
+  const customer = useSelector(selectors.customer);
+  const customerSubscriptions = useSelector(selectors.customerSubscriptions);
+  const profile = useSelector(selectors.profile);
+  const plans = useSelector(selectors.plans);
+  const createSubscriptionStatus = useSelector(
+    selectors.createSubscriptionStatus
   );
+  const plansByProductId = useSelector(selectors.plansByProductId);
 
   const dispatch = useDispatch();
   // TODO: Find a typescript-safe way to DRY this up
