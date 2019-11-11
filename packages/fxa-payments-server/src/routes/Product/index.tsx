@@ -1,15 +1,14 @@
-import React, { useEffect, useState, useCallback, useContext } from 'react';
-import { connect, useSelector /*, useDispatch*/ } from 'react-redux';
+import React, {
+  useEffect,
+  useState,
+  useCallback,
+  useContext,
+  useMemo,
+} from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { AuthServerErrno, getErrorMessage } from '../../lib/errors';
-import {
-  fetchProductRouteResources,
-  createSubscriptionAndRefresh,
-} from '../../store/thunks';
-import {
-  resetCreateSubscription,
-  createSubscriptionMounted,
-  createSubscriptionEngaged,
-} from '../../store/actions';
+import * as thunks from '../../store/thunks';
+import * as actions from '../../store/actions';
 import { AppContext } from '../../lib/AppContext';
 import FlowEvent from '../../lib/flow-event';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
@@ -44,28 +43,21 @@ export type ProductProps = {
       productId: string;
     };
   };
-  createSubscription: Function;
-  resetCreateSubscription: () => void;
-  resetCreateSubscriptionError: () => void;
-  fetchProductRouteResources: Function;
   validatorInitialState?: ValidatorState;
-  createSubscriptionMounted: Function;
-  createSubscriptionEngaged: Function;
 };
 
 export const Product = ({
   match: {
     params: { productId },
   },
-  createSubscription,
-  resetCreateSubscription,
-  resetCreateSubscriptionError,
-  fetchProductRouteResources,
   validatorInitialState,
-  createSubscriptionMounted,
-  createSubscriptionEngaged,
 }: ProductProps) => {
   const { config, locationReload, queryParams } = useContext(AppContext);
+
+  const {
+    plan: planId = '',
+    activated: accountActivated = false,
+  } = queryParams;
 
   const customer = useSelector<State, CustomerFetchState>(selectors.customer);
   const customerSubscriptions = useSelector<
@@ -82,10 +74,26 @@ export const Product = ({
     selectors.plansByProductId
   );
 
-  const {
-    plan: planId = '',
-    activated: accountActivated = false,
-  } = queryParams;
+  const dispatch = useDispatch();
+  // TODO: Find a typescript-safe way to DRY this up
+  const [
+    createSubscription,
+    resetCreateSubscriptionError,
+    createSubscriptionEngaged,
+    createSubscriptionMounted,
+  ] = useMemo(
+    () => [
+      (...args: Parameters<typeof thunks.createSubscriptionAndRefresh>) =>
+        dispatch(thunks.createSubscriptionAndRefresh(...args)),
+      (...args: Parameters<typeof actions.resetCreateSubscription>) =>
+        dispatch(actions.resetCreateSubscription(...args)),
+      (...args: Parameters<typeof actions.createSubscriptionMounted>) =>
+        dispatch(actions.createSubscriptionMounted(...args)),
+      (...args: Parameters<typeof actions.createSubscriptionEngaged>) =>
+        dispatch(actions.createSubscriptionEngaged(...args)),
+    ],
+    [dispatch]
+  );
 
   // There is no way to do this with a React Hook. We need the
   // `navigationTiming.domComplete` value to calculate the "client" perf metric.
@@ -99,15 +107,11 @@ export const Product = ({
     error: false,
   });
 
-  // Fetch plans on initial render, change in product ID, or auth change.
+  // Fetch plans & reset subscription creation status on initial render.
   useEffect(() => {
-    fetchProductRouteResources();
-  }, [fetchProductRouteResources]);
-
-  // Reset subscription creation status on initial render.
-  useEffect(() => {
-    resetCreateSubscription();
-  }, [resetCreateSubscription]);
+    dispatch(actions.resetCreateSubscription());
+    dispatch(thunks.fetchProductRouteResources());
+  }, [dispatch]);
 
   // Figure out a selected plan for product, either from query param or first plan.
   const productPlans = plansByProductId(productId);
@@ -329,14 +333,4 @@ const AccountActivatedBanner = ({
   </div>
 );
 
-export default connect(
-  (state: State) => ({}),
-  {
-    resetCreateSubscription: resetCreateSubscription,
-    resetCreateSubscriptionError: resetCreateSubscription,
-    fetchProductRouteResources,
-    createSubscription: createSubscriptionAndRefresh,
-    createSubscriptionMounted,
-    createSubscriptionEngaged,
-  }
-)(Product);
+export default Product;

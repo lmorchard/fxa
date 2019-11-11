@@ -1,6 +1,6 @@
 import React from 'react';
 import { storiesOf } from '@storybook/react';
-import { action } from '@storybook/addon-actions';
+// import { action } from '@storybook/addon-actions';
 import { linkTo } from '@storybook/addon-links';
 import MockApp, {
   defaultAppContextValue,
@@ -242,10 +242,12 @@ const PLANS = [
   },
 ];
 
+/*
 const linkToSubscriptionSuccess = linkTo(
   'routes/Product',
   'subscription success'
 );
+*/
 
 const MOCK_STATE = {
   ...defaultState,
@@ -265,12 +267,14 @@ const MOCK_PROPS: ProductProps = {
       productId: PRODUCT_ID,
     },
   },
+  /*
   createSubscription: linkToSubscriptionSuccess,
   resetCreateSubscription: action('resetCreateSubscription'),
   resetCreateSubscriptionError: action('resetCreateSubscriptionError'),
   fetchProductRouteResources: action('fetchProductRouteResources'),
   createSubscriptionMounted: () => {},
   createSubscriptionEngaged: () => {},
+  */
 };
 
 const FAILURE_PROPS = {
