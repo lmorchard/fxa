@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useContext } from 'react';
-import { connect } from 'react-redux';
+import { connect, useSelector /*, useDispatch*/ } from 'react-redux';
 import { AuthServerErrno, getErrorMessage } from '../../lib/errors';
 import {
   fetchProductRouteResources,
@@ -15,21 +15,16 @@ import FlowEvent from '../../lib/flow-event';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { State as ValidatorState } from '../../lib/validator';
 
+import * as selectors from '../../store/selectors';
 import {
-  customer,
-  customerSubscriptions,
-  profile,
-  plans,
-  createSubscriptionStatus,
-  plansByProductId,
+  CustomerSubscriptionsSelected,
+  PlansByProductIdSelected,
 } from '../../store/selectors';
 
 import {
   State,
-  Plan,
   Profile,
   CustomerFetchState,
-  CustomerSubscription,
   PlansFetchState,
   CreateSubscriptionFetchState,
   ProfileFetchState,
@@ -49,12 +44,6 @@ export type ProductProps = {
       productId: string;
     };
   };
-  profile: ProfileFetchState;
-  plans: PlansFetchState;
-  customer: CustomerFetchState;
-  customerSubscriptions: Array<CustomerSubscription> | null;
-  createSubscriptionStatus: CreateSubscriptionFetchState;
-  plansByProductId: (id: string) => Array<Plan>;
   createSubscription: Function;
   resetCreateSubscription: () => void;
   resetCreateSubscriptionError: () => void;
@@ -68,12 +57,6 @@ export const Product = ({
   match: {
     params: { productId },
   },
-  profile,
-  plans,
-  customer,
-  customerSubscriptions,
-  createSubscriptionStatus,
-  plansByProductId,
   createSubscription,
   resetCreateSubscription,
   resetCreateSubscriptionError,
@@ -83,6 +66,21 @@ export const Product = ({
   createSubscriptionEngaged,
 }: ProductProps) => {
   const { config, locationReload, queryParams } = useContext(AppContext);
+
+  const customer = useSelector<State, CustomerFetchState>(selectors.customer);
+  const customerSubscriptions = useSelector<
+    State,
+    CustomerSubscriptionsSelected
+  >(selectors.customerSubscriptions);
+  const profile = useSelector<State, ProfileFetchState>(selectors.profile);
+  const plans = useSelector<State, PlansFetchState>(selectors.plans);
+  const createSubscriptionStatus = useSelector<
+    State,
+    CreateSubscriptionFetchState
+  >(selectors.createSubscriptionStatus);
+  const plansByProductId = useSelector<State, PlansByProductIdSelected>(
+    selectors.plansByProductId
+  );
 
   const {
     plan: planId = '',
@@ -332,14 +330,7 @@ const AccountActivatedBanner = ({
 );
 
 export default connect(
-  (state: State) => ({
-    customer: customer(state),
-    customerSubscriptions: customerSubscriptions(state),
-    profile: profile(state),
-    plans: plans(state),
-    createSubscriptionStatus: createSubscriptionStatus(state),
-    plansByProductId: plansByProductId(state),
-  }),
+  (state: State) => ({}),
   {
     resetCreateSubscription: resetCreateSubscription,
     resetCreateSubscriptionError: resetCreateSubscription,

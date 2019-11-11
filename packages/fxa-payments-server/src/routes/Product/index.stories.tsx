@@ -10,6 +10,9 @@ import { APIError } from '../../lib/apiClient';
 import { SignInLayout } from '../../components/AppLayout';
 import { State as ValidatorState } from '../../lib/validator';
 import { Product, ProductProps } from './index';
+import { State } from '../../store/types';
+import { fetchDefault } from '../../store/utils';
+import { defaultState } from '../../store/reducers';
 
 function init() {
   storiesOf('routes/Product', module)
@@ -19,37 +22,41 @@ function init() {
     ))
     .add('success', () => (
       <ProductRoute
-        routeProps={{
-          ...MOCK_PROPS,
-          customerSubscriptions: [
-            {
-              current_period_end: (Date.now() + 86400) / 1000,
-              current_period_start: (Date.now() - 86400) / 1000,
-              cancel_at_period_end: false,
-              end_at: null,
-              nickname: 'Example Plan',
-              plan_id: 'plan_123',
-              status: 'active',
-              subscription_id: 'sk_78987',
+        initialState={mkState({
+          customer: {
+            loading: false,
+            error: null,
+            result: {
+              ...MOCK_STATE.api.customer,
+              subscriptions: [
+                {
+                  current_period_end: (Date.now() + 86400) / 1000,
+                  current_period_start: (Date.now() - 86400) / 1000,
+                  cancel_at_period_end: false,
+                  end_at: null,
+                  nickname: 'Example Plan',
+                  plan_id: 'plan_123',
+                  status: 'active',
+                  subscription_id: 'sk_78987',
+                },
+              ],
             },
-          ],
-        }}
+          },
+        })}
       />
     ));
 
   storiesOf('routes/Product/page load', module)
     .add('profile loading', () => (
       <ProductRoute
-        routeProps={{
-          ...MOCK_PROPS,
+        initialState={mkState({
           profile: { loading: true, error: null, result: null },
-        }}
+        })}
       />
     ))
     .add('profile error', () => (
       <ProductRoute
-        routeProps={{
-          ...MOCK_PROPS,
+        initialState={mkState({
           profile: {
             loading: false,
             result: null,
@@ -58,21 +65,19 @@ function init() {
               message: 'Internal Server Error',
             }),
           },
-        }}
+        })}
       />
     ))
     .add('customer loading', () => (
       <ProductRoute
-        routeProps={{
-          ...MOCK_PROPS,
+        initialState={mkState({
           customer: { loading: true, error: null, result: null },
-        }}
+        })}
       />
     ))
     .add('customer error', () => (
       <ProductRoute
-        routeProps={{
-          ...MOCK_PROPS,
+        initialState={mkState({
           customer: {
             loading: false,
             result: null,
@@ -81,21 +86,19 @@ function init() {
               message: 'Internal Server Error',
             }),
           },
-        }}
+        })}
       />
     ))
     .add('plans loading', () => (
       <ProductRoute
-        routeProps={{
-          ...MOCK_PROPS,
+        initialState={mkState({
           plans: { loading: true, error: null, result: null },
-        }}
+        })}
       />
     ))
     .add('plans error', () => (
       <ProductRoute
-        routeProps={{
-          ...MOCK_PROPS,
+        initialState={mkState({
           plans: {
             loading: false,
             result: null,
@@ -104,16 +107,16 @@ function init() {
               message: 'Internal Server Error',
             }),
           },
-        }}
+        })}
       />
     ));
 
   storiesOf('routes/Product/payment failures', module)
     .add('card declined', () => (
       <ProductRoute
-        routeProps={{
-          ...FAILURE_PROPS,
-          createSubscriptionStatus: {
+        routeProps={FAILURE_PROPS}
+        initialState={mkState({
+          createSubscription: {
             result: null,
             loading: false,
             error: {
@@ -127,14 +130,13 @@ function init() {
               statusCode: 402,
             },
           },
-        }}
+        })}
       />
     ))
     .add('miscellaneous', () => (
       <ProductRoute
-        routeProps={{
-          ...FAILURE_PROPS,
-          createSubscriptionStatus: {
+        initialState={mkState({
+          createSubscription: {
             result: null,
             loading: false,
             error: {
@@ -142,7 +144,7 @@ function init() {
               message: 'Payment server request failed.',
             },
           },
-        }}
+        })}
       />
     ))
     .add('stripe.createToken() fails on submit', () => {
@@ -168,17 +170,41 @@ function init() {
     });
 }
 
+const mkState = (props: {
+  customer?: any;
+  profile?: any;
+  plans?: any;
+  createSubscription?: any;
+}): State => ({
+  ...MOCK_STATE,
+  api: {
+    ...MOCK_STATE.api,
+    // TODO: Figure out a typescript-safe way to DRY this up
+    customer: { ...MOCK_STATE.api.customer, ...props.customer },
+    profile: { ...MOCK_STATE.api.profile, ...props.profile },
+    plans: { ...MOCK_STATE.api.plans, ...props.plans },
+    createSubscription: {
+      ...MOCK_STATE.api.createSubscription,
+      ...props.createSubscription,
+    },
+  },
+});
+
 type ProductRouteProps = {
+  initialState?: State;
   routeProps?: ProductProps;
   queryParams?: QueryParams;
   applyStubsToStripe?: (orig: stripe.Stripe) => stripe.Stripe;
 };
+
 const ProductRoute = ({
+  initialState = MOCK_STATE,
   routeProps = MOCK_PROPS,
   queryParams = defaultAppContextValue.queryParams,
   applyStubsToStripe,
 }: ProductRouteProps) => (
   <MockApp
+    initialState={initialState}
     applyStubsToStripe={applyStubsToStripe}
     appContextValue={{
       ...defaultAppContextValue,
@@ -221,34 +247,24 @@ const linkToSubscriptionSuccess = linkTo(
   'subscription success'
 );
 
+const MOCK_STATE = {
+  ...defaultState,
+  api: {
+    ...defaultState.api,
+    customer: fetchDefault({
+      subscriptions: [],
+    }),
+    plans: fetchDefault(PLANS),
+    profile: fetchDefault(PROFILE),
+  },
+};
+
 const MOCK_PROPS: ProductProps = {
   match: {
     params: {
       productId: PRODUCT_ID,
     },
   },
-  profile: {
-    error: null,
-    loading: false,
-    result: PROFILE,
-  },
-  plans: {
-    error: null,
-    loading: false,
-    result: PLANS,
-  },
-  createSubscriptionStatus: {
-    error: null,
-    loading: false,
-    result: null,
-  },
-  customer: {
-    error: null,
-    loading: false,
-    result: null,
-  },
-  customerSubscriptions: [],
-  plansByProductId: (_: string) => PLANS,
   createSubscription: linkToSubscriptionSuccess,
   resetCreateSubscription: action('resetCreateSubscription'),
   resetCreateSubscriptionError: action('resetCreateSubscriptionError'),
