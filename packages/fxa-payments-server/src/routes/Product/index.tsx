@@ -9,13 +9,14 @@ import { useSelector, useDispatch } from 'react-redux';
 import { AuthServerErrno, getErrorMessage } from '../../lib/errors';
 import * as thunks from '../../store/thunks';
 import * as actions from '../../store/actions';
+import * as selectors from '../../store/selectors';
+import { Profile } from '../../store/types';
 import { AppContext } from '../../lib/AppContext';
 import FlowEvent from '../../lib/flow-event';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { State as ValidatorState } from '../../lib/validator';
 
-import * as selectors from '../../store/selectors';
-import { Profile } from '../../store/types';
+import { wrapFn } from '../../lib/utils';
 
 import './index.scss';
 
@@ -57,22 +58,18 @@ export const Product = ({
   const plansByProductId = useSelector(selectors.plansByProductId);
 
   const dispatch = useDispatch();
-  // TODO: Find a typescript-safe way to DRY this up
   const [
     createSubscription,
     resetCreateSubscriptionError,
     createSubscriptionEngaged,
     createSubscriptionMounted,
   ] = useMemo(
+    // TODO: Find a typescript-safe way to DRY this up - .map() doesn't work.
     () => [
-      (...args: Parameters<typeof thunks.createSubscriptionAndRefresh>) =>
-        dispatch(thunks.createSubscriptionAndRefresh(...args)),
-      (...args: Parameters<typeof actions.resetCreateSubscription>) =>
-        dispatch(actions.resetCreateSubscription(...args)),
-      (...args: Parameters<typeof actions.createSubscriptionMounted>) =>
-        dispatch(actions.createSubscriptionMounted(...args)),
-      (...args: Parameters<typeof actions.createSubscriptionEngaged>) =>
-        dispatch(actions.createSubscriptionEngaged(...args)),
+      wrapFn(dispatch, thunks.createSubscriptionAndRefresh),
+      wrapFn(dispatch, actions.resetCreateSubscription),
+      wrapFn(dispatch, actions.createSubscriptionMounted),
+      wrapFn(dispatch, actions.createSubscriptionEngaged),
     ],
     [dispatch]
   );
