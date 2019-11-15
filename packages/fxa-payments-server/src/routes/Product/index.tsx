@@ -1,22 +1,19 @@
 import React, { useEffect, useContext, useMemo } from 'react';
 import { connect } from 'react-redux';
 import { AuthServerErrno } from '../../lib/errors';
-import {
-  fetchProductRouteResources,
-  createSubscriptionAndRefresh,
-  updateSubscriptionPlanAndRefresh,
-} from '../../store/thunks';
-import {
-  resetCreateSubscription,
-  createSubscriptionMounted,
-  createSubscriptionEngaged,
-  resetUpdateSubscriptionPlan,
-} from '../../store/actions';
 import { AppContext } from '../../lib/AppContext';
 import FlowEvent from '../../lib/flow-event';
 import { LoadingOverlay } from '../../components/LoadingOverlay';
 import { State as ValidatorState } from '../../lib/validator';
 
+import { State } from '../../store/state';
+import {
+  fetchProductRouteResources,
+  createSubscriptionAndRefresh,
+  updateSubscriptionPlanAndRefresh,
+  SequenceFunctions,
+} from '../../store/sequences';
+import { actions, ActionFunctions } from '../../store/actions';
 import {
   customer,
   customerSubscriptions,
@@ -27,17 +24,7 @@ import {
   updateSubscriptionPlanStatus,
 } from '../../store/selectors';
 
-import {
-  State,
-  Plan,
-  CustomerFetchState,
-  CustomerSubscription,
-  PlansFetchState,
-  CreateSubscriptionFetchState,
-  UpdateSubscriptionPlanFetchState,
-  ProfileFetchState,
-  ProductMetadata,
-} from '../../store/types';
+import { CustomerSubscription, Plan, ProductMetadata } from '../../store/types';
 
 import { metadataFromPlan } from '../../store/utils';
 
@@ -50,31 +37,34 @@ import SubscriptionRedirect from './SubscriptionRedirect';
 import SubscriptionCreate from './SubscriptionCreate';
 import SubscriptionUpgrade from './SubscriptionUpgrade';
 
+const {
+  resetCreateSubscription,
+  createSubscriptionMounted,
+  createSubscriptionEngaged,
+  resetUpdateSubscriptionPlan,
+} = actions;
+
 export type ProductProps = {
   match: {
     params: {
       productId: string;
     };
   };
-  profile: ProfileFetchState;
-  plans: PlansFetchState;
-  customer: CustomerFetchState;
-  customerSubscriptions: Array<CustomerSubscription> | null;
-  createSubscriptionStatus: CreateSubscriptionFetchState;
-  plansByProductId: (id: string) => Array<Plan>;
-  createSubscriptionAndRefresh: (
-    ...args: Parameters<typeof createSubscriptionAndRefresh>
-  ) => any;
-  updateSubscriptionPlanAndRefresh: (
-    ...args: Parameters<typeof updateSubscriptionPlanAndRefresh>
-  ) => any;
-  updateSubscriptionPlanStatus: UpdateSubscriptionPlanFetchState;
-  resetUpdateSubscriptionPlan: () => any;
-  resetCreateSubscription: () => void;
-  fetchProductRouteResources: Function;
+  profile: State['profile'];
+  plans: State['plans'];
+  customer: State['customer'];
+  customerSubscriptions: CustomerSubscription[] | null;
+  plansByProductId: (productId: string) => Plan[];
+  createSubscriptionStatus: State['createSubscription'];
+  updateSubscriptionPlanStatus: State['updateSubscriptionPlan'];
+  createSubscriptionAndRefresh: SequenceFunctions['createSubscriptionAndRefresh'];
+  resetCreateSubscription: ActionFunctions['resetCreateSubscription'];
+  updateSubscriptionPlanAndRefresh: SequenceFunctions['updateSubscriptionPlanAndRefresh'];
+  resetUpdateSubscriptionPlan: ActionFunctions['resetUpdateSubscriptionPlan'];
+  fetchProductRouteResources: SequenceFunctions['fetchProductRouteResources'];
+  createSubscriptionMounted: ActionFunctions['createSubscriptionMounted'];
+  createSubscriptionEngaged: ActionFunctions['createSubscriptionEngaged'];
   validatorInitialState?: ValidatorState;
-  createSubscriptionMounted: Function;
-  createSubscriptionEngaged: Function;
 };
 
 export const Product = ({
@@ -224,7 +214,7 @@ type PlansByIdType = {
   [plan_id: string]: { plan: Plan; metadata: ProductMetadata };
 };
 
-const indexPlansById = (plans: PlansFetchState): PlansByIdType =>
+const indexPlansById = (plans: State['plans']): PlansByIdType =>
   (plans.result || []).reduce(
     (acc, plan) => ({
       ...acc,
@@ -236,7 +226,7 @@ const indexPlansById = (plans: PlansFetchState): PlansByIdType =>
 // If the customer has any subscription plan that matches a plan for the
 // selected product, then they are already subscribed.
 const customerIsSubscribedToProduct = (
-  customerSubscriptions: Array<CustomerSubscription> | null,
+  customerSubscriptions: ProductProps['customerSubscriptions'],
   productPlans: Plan[]
 ) =>
   customerSubscriptions &&
@@ -247,7 +237,7 @@ const customerIsSubscribedToProduct = (
 // If the customer has any subscribed plan that matches the productSet
 // for the selected plan, then that is the plan from which to upgrade.
 const findUpgradeFromPlan = (
-  customerSubscriptions: Array<CustomerSubscription> | null,
+  customerSubscriptions: ProductProps['customerSubscriptions'],
   selectedPlan: Plan,
   plansById: PlansByIdType
 ): {
