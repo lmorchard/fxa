@@ -1,7 +1,9 @@
 import React from 'react';
-import { QueryParams } from './types';
+import { QueryParams, Token } from './types';
 import { Config, config } from './config';
 import ScreenInfo from './screen-info';
+
+import { Plan, Profile, Customer, Subscription } from '../lib/types';
 
 export type AppContextType = {
   config: Config;
@@ -10,10 +12,20 @@ export type AppContextType = {
   navigateToUrl: (url: string) => void;
   getScreenInfo: () => ScreenInfo;
   locationReload: (url: string) => void;
+  token: Token | undefined;
+  plans: Plan[] | undefined;
+  profile: Profile | undefined;
+  customer: Customer | undefined;
+  fetchCustomer: () => Promise<any>;
+  subscriptions: Subscription[] | undefined;
+  fetchSubscriptions: () => Promise<any>;
 };
 
 /* istanbul ignore next - this function does nothing worth covering */
 const noopFunction = () => {};
+
+/* istanbul ignore next - this function does nothing worth covering */
+const noopPromise = () => Promise.resolve();
 
 export const defaultAppContext = {
   config,
@@ -22,6 +34,13 @@ export const defaultAppContext = {
   matchMedia: () => false,
   navigateToUrl: noopFunction,
   queryParams: {},
+  token: undefined,
+  plans: undefined,
+  profile: undefined,
+  customer: undefined,
+  subscriptions: undefined,
+  fetchCustomer: noopPromise,
+  fetchSubscriptions: noopPromise,
 };
 
 export const AppContext = React.createContext<AppContextType>(

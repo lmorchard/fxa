@@ -1,6 +1,11 @@
 import FlowEvent from './flow-event';
 import SpeedTrap from 'speed-trap';
 
+jest.mock('@sentry/browser', () => ({
+  captureException: jest.fn(),
+}));
+import { captureException } from '@sentry/browser';
+
 const eventGroup = 'testo';
 const eventType = 'quuz';
 
@@ -11,6 +16,7 @@ const perfStartTime = mockNow - 100; // started in the past, before "now"
 beforeEach(() => {
   // `sendBeacon` is undefined in this context
   window.navigator.sendBeacon = jest.fn();
+  global.console.error = jest.fn();
 });
 
 it('does not send metrics when uninitialized', () => {
@@ -32,6 +38,21 @@ it('remains uninitialized when any flow param is empty', () => {
   FlowEvent.logAmplitudeEvent(eventGroup, eventType, perfStartTime, {});
 
   expect(window.navigator.sendBeacon).not.toHaveBeenCalled();
+});
+
+it('logs and captures an exception from postMetrics', () => {
+  const error = 'oops';
+  (window.navigator.sendBeacon as jest.Mock).mockImplementation(() => {
+    throw error;
+  });
+  FlowEvent.init({
+    device_id: 'moz9000',
+    flow_begin_time: 9001,
+    flow_id: 'ipsoandfacto',
+  });
+  FlowEvent.logAmplitudeEvent(eventGroup, eventType, mockNow - 9001, {});
+  expect(captureException as jest.Mock).toBeCalledWith(error);
+  expect(global.console.error).toBeCalledWith('AppError', error);
 });
 
 it('initializes when given all flow params', () => {

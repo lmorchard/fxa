@@ -1,5 +1,5 @@
 import React from 'react';
-import { Profile } from '../../store/types';
+import { Profile } from '../../lib/types';
 
 export default ({
   profile: { email, avatar, displayName },
@@ -7,7 +7,7 @@ export default ({
   profile: Profile;
 }) => (
   <div className="profile-banner">
-    <img className="avatar hoisted" src={avatar} alt={displayName || email} />
+    <img className="avatar hoisted" src={avatar} alt={'' + displayName} />
     {displayName && (
       <h2 data-testid="profile-display-name" className="displayName">
         {displayName}

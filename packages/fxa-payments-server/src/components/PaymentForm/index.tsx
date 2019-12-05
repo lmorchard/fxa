@@ -27,7 +27,7 @@ import { formatCurrencyInCents } from '../../lib/formats';
 import { AppContext } from '../../lib/AppContext';
 
 import './index.scss';
-import { Plan } from '../../store/types';
+import { Plan } from '../../lib/types';
 
 // Define a minimal type for what we use from the Stripe API, which makes
 // things easier to mock.
@@ -283,7 +283,7 @@ const validateZip: OnValidateFunction = (value, focused) => {
   } else if (value.length !== 5 && !focused) {
     valid = false;
     error = 'Zip code is too short';
-  } else if (value.length == 5) {
+  } else if (value.length === 5) {
     valid = true;
   }
   return {

@@ -1,6 +1,5 @@
 import React from 'react';
 import { render } from 'react-dom';
-import { createAppStore } from './store';
 import * as Sentry from '@sentry/browser';
 
 import { config, readConfigFromMeta } from './lib/config';
@@ -8,8 +7,6 @@ import { updateAPIClientToken, updateAPIClientConfig } from './lib/apiClient';
 import './index.scss';
 import App from './App';
 import ScreenInfo from './lib/screen-info';
-
-import { actions } from './store/actions';
 
 import SpeedTrap from 'speed-trap';
 SpeedTrap.init(); // for perf timing metrics
@@ -23,8 +20,6 @@ async function init() {
     });
   }
 
-  const store = createAppStore();
-
   const queryParams = parseParams(window.location.search);
   const hashParams = await getHashParams();
   const accessToken = await getVerifiedAccessToken(hashParams);
@@ -34,14 +29,11 @@ async function init() {
   if (accessToken) {
     updateAPIClientConfig(config);
     updateAPIClientToken(accessToken);
-    store.dispatch(actions.fetchToken());
-    store.dispatch(actions.fetchProfile());
 
     render(
       <App
         {...{
           config,
-          store,
           queryParams,
           matchMedia,
           navigateToUrl,

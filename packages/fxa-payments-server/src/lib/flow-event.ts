@@ -1,5 +1,7 @@
-import * as Sentry from '@sentry/browser';
+import { captureException } from '@sentry/browser';
 import SpeedTrap from 'speed-trap';
+
+const Sentry = { captureException };
 
 interface FlowEventParams {
   device_id?: string;
