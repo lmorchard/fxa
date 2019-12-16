@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useContext } from 'react';
-import { Plan, Profile } from '../../../store/types';
+import { Plan } from '../../../lib/types';
 
 import { State as ValidatorState } from '../../../lib/validator';
 
@@ -13,34 +13,31 @@ import PlanDetails from '../PlanDetails';
 import ProfileBanner from '../ProfileBanner';
 import AccountActivatedBanner from './AccountActivatedBanner';
 
-import { ProductProps } from '../index';
 import * as Amplitude from '../../../lib/amplitude';
 
+import { useAwait, PromiseState } from '../../../lib/hooks';
+import { apiCreateSubscription } from '../../../lib/apiClient';
+import { AppContext } from '../../../lib/AppContext';
+
 export type SubscriptionCreateProps = {
-  profile: Profile;
-  accountActivated: boolean;
   selectedPlan: Plan;
-  createSubscriptionAndRefresh: ProductProps['createSubscriptionAndRefresh'];
-  createSubscriptionStatus: ProductProps['createSubscriptionStatus'];
-  resetCreateSubscription: ProductProps['resetCreateSubscription'];
+  accountActivated?: boolean;
   validatorInitialState?: ValidatorState;
+  initialCreateSubscriptionStatus?: PromiseState;
 };
 
 export const SubscriptionCreate = ({
-  profile,
-  accountActivated,
   selectedPlan,
-  createSubscriptionAndRefresh,
-  createSubscriptionStatus,
-  resetCreateSubscription,
+  accountActivated = false,
   validatorInitialState,
+  initialCreateSubscriptionStatus,
 }: SubscriptionCreateProps) => {
   // Hide the Firefox logo in layout if we want to display the avatar
   const { setHideLogo } = useContext(SignInLayoutContext);
   useEffect(() => {
     setHideLogo(!accountActivated);
   }, [setHideLogo, accountActivated]);
-  
+
   const onFormMounted = useCallback(
     () => Amplitude.createSubscriptionMounted(selectedPlan),
     [selectedPlan]
@@ -51,20 +48,26 @@ export const SubscriptionCreate = ({
     [selectedPlan]
   );
 
-  // Reset subscription creation status on initial render.
-  useEffect(() => {
-    resetCreateSubscription();
-  }, [resetCreateSubscription]);
+  const { profile, fetchCustomer, fetchSubscriptions } = useContext(AppContext);
+
+  const [
+    createSubscriptionStatus,
+    createSubscription,
+    resetCreateSubscription,
+  ] = useAwait(apiCreateSubscription, {
+    initialState: initialCreateSubscriptionStatus,
+    executeImmediately: false,
+  });
 
   const [createTokenError, setCreateTokenError] = useState({
     type: '',
     error: false,
   });
 
-  const inProgress = createSubscriptionStatus.loading;
+  const inProgress = createSubscriptionStatus.pending;
 
   const isCardError =
-    createSubscriptionStatus.error !== null &&
+    createSubscriptionStatus.error &&
     (createSubscriptionStatus.error.code === 'card_declined' ||
       createSubscriptionStatus.error.code === 'incorrect_cvc');
 
@@ -83,13 +86,15 @@ export const SubscriptionCreate = ({
   ]);
 
   const onPayment = useCallback(
-    (tokenResponse: stripe.TokenResponse, name: string) => {
+    async (tokenResponse: stripe.TokenResponse, name: string) => {
       if (tokenResponse && tokenResponse.token) {
-        createSubscriptionAndRefresh(
-          tokenResponse.token.id,
-          selectedPlan,
-          name
-        );
+        await createSubscription({
+          paymentToken: tokenResponse.token.id,
+          planId: selectedPlan.plan_id,
+          productId: selectedPlan.product_id,
+          displayName: name,
+        });
+        await Promise.all([fetchCustomer(), fetchSubscriptions()]);
       } else {
         // This shouldn't happen with a successful createToken() call, but let's
         // display an error in case it does.
@@ -97,7 +102,13 @@ export const SubscriptionCreate = ({
         setCreateTokenError(error);
       }
     },
-    [selectedPlan, createSubscriptionAndRefresh, setCreateTokenError]
+    [
+      selectedPlan,
+      createSubscription,
+      fetchCustomer,
+      fetchSubscriptions,
+      setCreateTokenError,
+    ]
   );
 
   const onPaymentError = useCallback(
@@ -107,6 +118,10 @@ export const SubscriptionCreate = ({
     },
     [setCreateTokenError]
   );
+
+  if (!profile) {
+    return null;
+  }
 
   return (
     <div className="product-payment" data-testid="subscription-create">

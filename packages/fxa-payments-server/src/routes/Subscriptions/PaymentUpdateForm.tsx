@@ -1,23 +1,23 @@
 import React, { useCallback, useState } from 'react';
 import dayjs from 'dayjs';
 import { formatCurrencyInCents } from '../../lib/formats';
-import { useBooleanState } from '../../lib/hooks';
+import { useBooleanState, PromiseState } from '../../lib/hooks';
 import { getErrorMessage } from '../../lib/errors';
-import { SelectorReturns } from '../../store/selectors';
-import { Customer, CustomerSubscription, Plan } from '../../store/types';
-import { metadataFromPlan } from '../../store/utils';
+import { Customer, CustomerSubscription, Plan } from '../../lib/types';
+import { metadataFromPlan } from '../../lib/metadataFromPlan';
 import PaymentForm from '../../components/PaymentForm';
 import ErrorMessage from '../../components/ErrorMessage';
-import { SubscriptionsProps } from './index';
+import { FunctionWithIgnoredReturn } from '../../lib/types';
+import { apiUpdatePayment } from '../../lib/apiClient';
 import * as Amplitude from '../../lib/amplitude';
 
 type PaymentUpdateFormProps = {
   customer: Customer;
   customerSubscription: CustomerSubscription;
   plan: Plan;
-  resetUpdatePayment: SubscriptionsProps['resetUpdatePayment'];
-  updatePayment: SubscriptionsProps['updatePayment'];
-  updatePaymentStatus: SelectorReturns['updatePaymentStatus'];
+  resetUpdatePayment: () => void;
+  updatePayment: FunctionWithIgnoredReturn<typeof apiUpdatePayment>;
+  updatePaymentStatus: PromiseState;
 };
 
 export const PaymentUpdateForm = ({
@@ -41,7 +41,11 @@ export const PaymentUpdateForm = ({
   const onPayment = useCallback(
     (tokenResponse: stripe.TokenResponse) => {
       if (tokenResponse && tokenResponse.token) {
-        updatePayment(tokenResponse.token.id, plan);
+        updatePayment({
+          paymentToken: tokenResponse.token.id,
+          planId: plan.plan_id,
+          productId: plan.product_id,
+        });
       } else {
         // This shouldn't happen with a successful createToken() call, but let's
         // display an error in case it does.
@@ -76,7 +80,7 @@ export const PaymentUpdateForm = ({
     [plan]
   );
 
-  const inProgress = updatePaymentStatus.loading;
+  const inProgress = updatePaymentStatus.pending;
 
   const { upgradeCTA } = metadataFromPlan(plan);
 

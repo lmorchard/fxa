@@ -1,5 +1,5 @@
 import { Config, defaultConfig } from './config';
-import { Plan, Profile, Customer, Subscription, Token } from '../store/types';
+import { Plan, Profile, Customer, Subscription, Token } from '../lib/types';
 import * as Amplitude from './amplitude';
 
 // TODO: Use a better type here
@@ -158,11 +158,7 @@ export async function apiUpdateSubscriptionPlan(params: {
   planId: string;
   productId: string;
 }) {
-  const {
-    subscriptionId,
-    planId,
-    productId,
-  } = params;
+  const { subscriptionId, planId, productId } = params;
   const metricsOptions = {
     planId,
     productId,
