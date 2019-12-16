@@ -14,8 +14,6 @@ import {
   Subscription,
 } from '../../lib/types';
 import { APIError } from '../../lib/apiClient';
-import { linkTo } from '@storybook/addon-links';
-import { PromiseState } from '../../lib/hooks';
 
 function init() {
   storiesOf('routes/Subscriptions', module)
