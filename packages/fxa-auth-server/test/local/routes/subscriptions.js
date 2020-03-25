@@ -1553,7 +1553,10 @@ describe('DirectStripeRoutes', () => {
     });
 
     describe('handleWebhookEvent', () => {
-      let subCreatedStub, subUpdatedStub, subDeletedStub;
+      let subCreatedStub,
+        subUpdatedStub,
+        subDeletedStub,
+        subInvoicePaymentSucceededStub;
       let scopeContextSpy, scopeSpy;
       const request = {
         payload: {},
@@ -1570,6 +1573,9 @@ describe('DirectStripeRoutes', () => {
           .resolves();
         subDeletedStub = sandbox
           .stub(directStripeRoutesInstance, 'handleSubscriptionDeletedEvent')
+          .resolves();
+        subInvoicePaymentSucceededStub = sandbox
+          .stub(directStripeRoutesInstance, 'handleInvoicePaymentSucceeded')
           .resolves();
 
         scopeContextSpy = sinon.fake();
@@ -1597,6 +1603,10 @@ describe('DirectStripeRoutes', () => {
           );
           assert.isTrue(
             subDeletedStub.notCalled,
+            'Expected to not call handleSubscriptionDeletedEvent'
+          );
+          assert.isTrue(
+            subInvoicePaymentSucceededStub.notCalled,
             'Expected to not call handleSubscriptionDeletedEvent'
           );
           assert.isTrue(
@@ -1628,6 +1638,10 @@ describe('DirectStripeRoutes', () => {
             'Expected to not call handleSubscriptionDeletedEvent'
           );
           assert.isTrue(
+            subInvoicePaymentSucceededStub.notCalled,
+            'Expected to not call handleSubscriptionDeletedEvent'
+          );
+          assert.isTrue(
             scopeContextSpy.notCalled,
             'Expected to not call Sentry'
           );
@@ -1656,6 +1670,10 @@ describe('DirectStripeRoutes', () => {
             'Expected to call handleSubscriptionDeletedEvent'
           );
           assert.isTrue(
+            subInvoicePaymentSucceededStub.notCalled,
+            'Expected to not call handleSubscriptionDeletedEvent'
+          );
+          assert.isTrue(
             scopeContextSpy.notCalled,
             'Expected to not call Sentry'
           );
@@ -1682,6 +1700,10 @@ describe('DirectStripeRoutes', () => {
           );
           assert.isTrue(
             subDeletedStub.notCalled,
+            'Expected to not call handleSubscriptionDeletedEvent'
+          );
+          assert.isTrue(
+            subInvoicePaymentSucceededStub.notCalled,
             'Expected to not call handleSubscriptionDeletedEvent'
           );
           assert.isTrue(scopeContextSpy.calledOnce, 'Expected to call Sentry');

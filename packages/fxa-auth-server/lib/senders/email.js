@@ -1846,13 +1846,15 @@ module.exports = function(log, config, oauthdb) {
         message.acceptLanguage,
         invoiceDate
       ),
-      serviceLastActiveDateOnly:  this._constructLocalDateString(
+      serviceLastActiveDateOnly: this._constructLocalDateString(
         message.timeZone,
         message.acceptLanguage,
         serviceLastActiveDate
       ),
     };
-    const subject = translator.gettext('Your %(planName)s subscription has been cancelled');
+    const subject = translator.gettext(
+      'Your %(planName)s subscription has been cancelled'
+    );
 
     return this.send({
       ...message,
