@@ -36,6 +36,7 @@ const subscriptionUpdated = require('../payments/fixtures/subscription_updated.j
 const subscriptionUpdatedFromIncomplete = require('../payments/fixtures/subscription_updated_from_incomplete.json');
 const eventInvoicePaymentSucceeded = require('../payments/fixtures/event_invoice_payment_succeeded.json');
 const eventInvoicePaymentFailed = require('../payments/fixtures/event_invoice_payment_failed.json');
+const eventCustomerSourceExpiring = require('../payments/fixtures/event_customer_source_expiring.json');
 const openInvoice = require('../payments/fixtures/invoice_open.json');
 const openPaymentIntent = require('../payments/fixtures/paymentIntent_requires_payment_method.json');
 const closedPaymementIntent = require('../payments/fixtures/paymentIntent_succeeded.json');
@@ -1901,6 +1902,34 @@ describe('DirectStripeRoutes', () => {
         assert.calledWith(
           sendSubscriptionPaymentFailedEmailStub,
           paymentFailedEvent.data.object
+        );
+        assert.notCalled(stubSendSubscriptionStatusToSqs);
+      });
+    });
+
+    describe('handleCustomerSourceExpiringEvent', () => {
+      it('sends email and emits a notification when a payment method is expiring', async () => {
+        const customerSourceExpiringEvent = deepCopy(eventCustomerSourceExpiring);
+        const sendSubscriptionPaymentExpiredEmailStub = sandbox
+          .stub(
+            directStripeRoutesInstance,
+            'sendSubscriptionPaymentExpiredEmail'
+          )
+          .resolves(true);
+        const mockSubscription = {
+          id: 'test1',
+          plan: { product: 'test2' },
+        };
+        directStripeRoutesInstance.stripeHelper.expandResource.resolves(
+          mockSubscription
+        );
+        await directStripeRoutesInstance.handleCustomerSourceExpiringEvent(
+          {},
+          customerSourceExpiringEvent
+        );
+        assert.calledWith(
+          sendSubscriptionPaymentExpiredEmailStub,
+          customerSourceExpiringEvent.data.object
         );
         assert.notCalled(stubSendSubscriptionStatusToSqs);
       });
