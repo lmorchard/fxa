@@ -30,7 +30,7 @@ function setupVariantStories(
   const SubscriptionsRoute = subscriptionsRouteWithBaseProps(baseRouteProps);
 
   storiesOf(namePrefix, module)
-    .add('loading', () => (
+    .add('loading thing', () => (
       <SubscriptionsRoute
         routeProps={{
           ...baseProps,
