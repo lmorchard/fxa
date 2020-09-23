@@ -244,8 +244,7 @@ jobs:
       - run:
           name: Build and deploy Storybooks
           command: |
-            STORYBOOKS_GCP_PRIVATE_KEY=$(echo $STORYBOOKS_GCP_PRIVATE_KEY_BASE64 | base64 -d) \
-            npx github:lmorchard/storybook-gcp-publisher
+            npx github:lmorchard/storybook-gcp-publisher --check-config
 
 workflows:
   test_pull_request:
